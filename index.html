@@ -3036,7 +3036,7 @@
 
           const relPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
           relPath.setAttribute("d", pathD);
-          
+
           const isSpotlightRel = state.isPresenting && (rel.fromId === state.selectedNodeId || rel.toId === state.selectedNodeId);
           relPath.setAttribute("class", `relationship-path ${state.selectedRelId === rel.id ? "is-selected" : ""} ${isSpotlightRel ? "is-spotlight" : ""}`);
           relPath.setAttribute("marker-end", "url(#arrowhead)");
@@ -3110,7 +3110,7 @@
 
               // Dynamically redraw the relationship curve in real-time as the label is dragged!
               relPath.setAttribute("d", `M ${x1} ${y1} Q ${curCx} ${curCy} ${x2} ${y2}`);
-              labelGroup.setAttribute("transform", `translate(${curApexX}, ${apexY})`);
+              labelGroup.setAttribute("transform", `translate(${curApexX}, ${curApexY})`);
             }
 
             function onLabelUp() {
@@ -4134,6 +4134,16 @@
           newSide = leftCount < rightCount ? "left" : "right";
         }
 
+        const existingKids = sheet.nodes.filter(n => n.parentId === parent.id);
+        let freeX = (parent.x || 0);
+        let freeY = (parent.y || 0) + 175;
+        if (existingKids.length > 0) {
+          const offsetIdx = existingKids.length;
+          const sign = offsetIdx % 2 === 1 ? 1 : -1;
+          const step = Math.ceil(offsetIdx / 2);
+          freeX = (parent.x || 0) + sign * step * 240;
+        }
+
         const newNode = {
           id: `node-${Date.now()}-${Math.floor(Math.random() * 1000)}`,
           parentId: parent.id,
@@ -4144,7 +4154,9 @@
           tags: [],
           collapsed: false,
           side: newSide,
-          shape: "card"
+          shape: "card",
+          x: freeX,
+          y: freeY
         };
 
         sheet.nodes.push(newNode);
@@ -4218,7 +4230,9 @@
           tags: [],
           collapsed: false,
           side: current.side || "right",
-          shape: current.shape || "card"
+          shape: current.shape || "card",
+          x: (current.x || 0) + 250,
+          y: (current.y || 0)
         };
 
         sheet.nodes.push(newNode);
