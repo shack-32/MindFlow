@@ -830,9 +830,31 @@
       opacity: 1 !important;
       filter: none !important;
       box-shadow: 0 0 0 3.5px var(--accent), 0 25px 60px -5px var(--accent-glow) !important;
-      transform: scale(1.05) !important;
+      transform: scale(1.06) !important;
       pointer-events: auto;
       z-index: 50;
+    }
+
+    /* Active item inside a presented Boundary Group: enlarged & emphasized */
+    body.is-presenting .mind-node.is-spotlight.is-boundary-focus {
+      transform: scale(1.16) !important;
+      box-shadow: 0 0 0 4px var(--accent), 0 28px 65px -4px var(--accent-glow) !important;
+      z-index: 60;
+    }
+
+    body.is-presenting .mind-node.is-spotlight.is-boundary-focus .node-title {
+      font-weight: 700 !important;
+    }
+
+    /* Sibling items in the same active Boundary Group: shown clearly together at normal size */
+    body.is-presenting .mind-node.is-boundary-peer {
+      opacity: 0.92 !important;
+      filter: none !important;
+      transform: scale(0.95) !important;
+      border-color: var(--border-strong) !important;
+      box-shadow: 0 10px 26px -5px rgba(0, 0, 0, 0.45) !important;
+      pointer-events: auto;
+      z-index: 45;
     }
 
     /* Lineage Ancestor illumination connecting back to home/root */
@@ -867,6 +889,12 @@
       filter: drop-shadow(0 0 7px var(--accent-glow));
     }
 
+    body.is-presenting path.connector-path.is-boundary-peer-path {
+      opacity: 0.72 !important;
+      stroke: var(--accent) !important;
+      stroke-width: 2.5px !important;
+    }
+
     /* Cinematic Mode Visual Enhancements */
     body.is-presenting.is-cinematic {
       background-color: #080a10 !important;
@@ -876,12 +904,12 @@
       background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, rgba(8, 10, 16, 0.98) 100%) !important;
     }
 
-    body.is-presenting.is-cinematic .mind-node:not(.is-spotlight):not(.is-lineage) {
+    body.is-presenting.is-cinematic .mind-node:not(.is-spotlight):not(.is-lineage):not(.is-boundary-peer) {
       opacity: 0.05 !important;
       filter: blur(2.5px) grayscale(70%) !important;
     }
 
-    body.is-presenting.is-cinematic path.connector-path:not(.is-spotlight):not(.is-lineage-path) {
+    body.is-presenting.is-cinematic path.connector-path:not(.is-spotlight):not(.is-lineage-path):not(.is-boundary-peer-path) {
       opacity: 0.03 !important;
     }
 
@@ -2570,6 +2598,18 @@
             </div>
           </div>
 
+          <!-- Presenter Mode Group Behavior -->
+          <div class="form-group">
+            <label class="form-label">Presenter Mode Behavior</label>
+            <label style="display:flex; align-items:flex-start; gap:10px; background:var(--bg-surface); border:1px solid var(--border-strong); padding:9px 12px; border-radius:10px; cursor:pointer;">
+              <input type="checkbox" id="bnd-present-together" checked style="margin-top:3px; accent-color:var(--accent); width:15px; height:15px; cursor:pointer; flex-shrink:0;" />
+              <div style="display:flex; flex-direction:column; gap:2px;">
+                <span style="font-size:0.82rem; font-weight:600; color:var(--text-main);">Show all boundary items together in Presenter Mode</span>
+                <span style="font-size:0.72rem; color:var(--text-muted); line-height:1.35;">Keeps the entire boundary group visible together while enlarging the active topic as you step through them.</span>
+              </div>
+            </label>
+          </div>
+
           <!-- Topics Checklist -->
           <div class="form-group">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
@@ -3596,15 +3636,28 @@
         const sheet = getActiveSheet();
         const { isVisible, nodeDimensions } = computeLayout() || { isVisible: new Set(sheet.nodes.map(n => n.id)), nodeDimensions: new Map() };
 
-        // Compute lineage ancestors if presenting (path illuminating back to central/home topic)
+        // Compute lineage ancestors and active boundary peers if presenting
         const lineageNodeIds = new Set();
+        const boundaryPeerNodeIds = new Set();
         if (state.isPresenting && state.selectedNodeId) {
-          let curr = sheet.nodes.find(n => n.id === state.selectedNodeId);
-          while (curr) {
-            lineageNodeIds.add(curr.id);
-            if (!curr.parentId) break;
-            curr = sheet.nodes.find(n => n.id === curr.parentId);
-          }
+          const activeBoundaries = (sheet.boundaries || []).filter(
+            b => b.presentTogether !== false && Array.isArray(b.nodeIds) && b.nodeIds.includes(state.selectedNodeId)
+          );
+          activeBoundaries.forEach(b => {
+            b.nodeIds.forEach(nid => boundaryPeerNodeIds.add(nid));
+          });
+
+          const traceLineage = (startId) => {
+            let curr = sheet.nodes.find(n => n.id === startId);
+            while (curr) {
+              lineageNodeIds.add(curr.id);
+              if (!curr.parentId) break;
+              curr = sheet.nodes.find(n => n.id === curr.parentId);
+            }
+          };
+
+          traceLineage(state.selectedNodeId);
+          boundaryPeerNodeIds.forEach(peerId => traceLineage(peerId));
         }
 
         // 1. Render DOM Nodes first so live offsetWidth & offsetHeight are 100% exact for all 4 ports!
@@ -3635,6 +3688,11 @@
           if (state.isPresenting) {
             if (isSelected) {
               nodeEl.classList.add("is-spotlight");
+              if (boundaryPeerNodeIds.size > 1 && boundaryPeerNodeIds.has(node.id)) {
+                nodeEl.classList.add("is-boundary-focus");
+              }
+            } else if (boundaryPeerNodeIds.has(node.id)) {
+              nodeEl.classList.add("is-boundary-peer");
             } else if (lineageNodeIds.has(node.id)) {
               nodeEl.classList.add("is-lineage");
             }
@@ -3904,8 +3962,11 @@
           pathEl.style.strokeWidth = strokeWidth;
 
           if (state.isPresenting) {
+            const isPeerOnly = boundaryPeerNodeIds.has(node.id) && node.id !== state.selectedNodeId;
             const isLineagePath = lineageNodeIds.has(node.id) && lineageNodeIds.has(parent.id);
-            if (isLineagePath) {
+            if (isPeerOnly) {
+              pathEl.classList.add("is-boundary-peer-path");
+            } else if (isLineagePath) {
               pathEl.classList.add("is-spotlight", "is-lineage-path");
             } else {
               const activeNode = sheet.nodes.find(n => n.id === state.selectedNodeId);
@@ -5055,7 +5116,8 @@
           nodeIds: selectedIds,
           color: pickHarmoniousColor(),
           borderStyle: "dashed",
-          fillOpacity: 0.08
+          fillOpacity: 0.08,
+          presentTogether: true
         };
 
         sheet.boundaries.push(newBnd);
@@ -5102,6 +5164,12 @@
         document.querySelectorAll("#bnd-opacity-group button").forEach(btn => {
           btn.classList.toggle("is-active", btn.dataset.bndOpacity === currentOpacity);
         });
+
+        // Present together toggle
+        const presentTogetherCb = document.getElementById("bnd-present-together");
+        if (presentTogetherCb) {
+          presentTogetherCb.checked = bnd.presentTogether !== false;
+        }
 
         // Topics checklist
         const checklistEl = document.getElementById("bnd-topics-checklist");
@@ -5490,23 +5558,61 @@
         selectNode(targetId);
 
         presenterCounter.textContent = `Topic ${state.presentStepIndex + 1} of ${state.presentationOrder.length}`;
+        const minCounter = document.getElementById("presenter-minimized-counter");
+        if (minCounter) {
+          minCounter.textContent = `Topic ${state.presentStepIndex + 1} of ${state.presentationOrder.length}`;
+        }
 
         const sheet = getActiveSheet();
-        let curr = sheet.nodes.find(n => n.id === targetId);
-        while (curr && curr.parentId) {
-          const parent = sheet.nodes.find(n => n.id === curr.parentId);
-          if (parent) parent.collapsed = false;
-          curr = parent;
-        }
+        const activeBoundaries = (sheet.boundaries || []).filter(
+          b => b.presentTogether !== false && Array.isArray(b.nodeIds) && b.nodeIds.includes(targetId)
+        );
+        const idsToUncollapse = new Set([targetId]);
+        activeBoundaries.forEach(b => b.nodeIds.forEach(nid => idsToUncollapse.add(nid)));
+
+        idsToUncollapse.forEach(nid => {
+          let curr = sheet.nodes.find(n => n.id === nid);
+          while (curr && curr.parentId) {
+            const parent = sheet.nodes.find(n => n.id === curr.parentId);
+            if (parent) parent.collapsed = false;
+            curr = parent;
+          }
+        });
 
         render();
 
         const node = sheet.nodes.find(n => n.id === targetId);
         if (node) {
-          const targetZoom = 1.25;
-          const targetX = window.innerWidth / 2 - node.x * targetZoom;
-          const targetY = window.innerHeight / 2 - node.y * targetZoom;
-          smoothCameraTo(targetX, targetY, targetZoom, 500);
+          const peerNodes = sheet.nodes.filter(n => idsToUncollapse.has(n.id));
+          if (peerNodes.length > 1) {
+            let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+            peerNodes.forEach(pn => {
+              const el = document.getElementById(`node-${pn.id}`);
+              const w = el ? el.offsetWidth : 200;
+              const h = el ? el.offsetHeight : 60;
+              minX = Math.min(minX, pn.x - w / 2);
+              maxX = Math.max(maxX, pn.x + w / 2);
+              minY = Math.min(minY, pn.y - h / 2);
+              maxY = Math.max(maxY, pn.y + h / 2);
+            });
+            const bndW = (maxX - minX) + 140;
+            const bndH = (maxY - minY) + 140;
+            const fitZoomX = (window.innerWidth * 0.78) / Math.max(1, bndW);
+            const fitZoomY = (window.innerHeight * 0.72) / Math.max(1, bndH);
+            const targetZoom = Math.min(1.22, Math.max(0.72, Math.min(fitZoomX, fitZoomY)));
+            const bndCenterX = (minX + maxX) / 2;
+            const bndCenterY = (minY + maxY) / 2;
+            const focusX = bndCenterX * 0.65 + node.x * 0.35;
+            const focusY = bndCenterY * 0.65 + node.y * 0.35;
+            const targetX = window.innerWidth / 2 - focusX * targetZoom;
+            const targetY = window.innerHeight / 2 - focusY * targetZoom;
+            smoothCameraTo(targetX, targetY, targetZoom, 500);
+          } else {
+            const targetZoom = 1.25;
+            const targetX = window.innerWidth / 2 - node.x * targetZoom;
+            const targetY = window.innerHeight / 2 - node.y * targetZoom;
+            smoothCameraTo(targetX, targetY, targetZoom, 500);
+          }
         }
       }
 
@@ -6133,6 +6239,8 @@
         bnd.borderStyle = borderStyle;
         bnd.fillOpacity = fillOpacity;
         bnd.nodeIds = checkedNodeIds;
+        const presentTogetherCb = document.getElementById("bnd-present-together");
+        bnd.presentTogether = presentTogetherCb ? presentTogetherCb.checked : true;
 
         closeBoundaryModal();
         pushHistory();
