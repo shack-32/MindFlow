@@ -387,8 +387,9 @@
       background: transparent !important;
       box-shadow: none !important;
       border: 1px solid transparent !important;
-      border-radius: 8px;
-      padding: 4px 8px;
+      border-radius: 6px;
+      padding: 2px 6px;
+      gap: 2px;
       min-width: 40px;
     }
 
@@ -415,7 +416,8 @@
       border: none !important;
       border-bottom: 2.5px solid var(--node-color, var(--border-strong)) !important;
       border-radius: 0;
-      padding: 6px 10px;
+      padding: 3px 8px;
+      gap: 3px;
       min-width: 60px;
     }
 
@@ -435,7 +437,7 @@
       box-shadow: none !important;
       border: 2px solid var(--node-color, var(--border-strong)) !important;
       border-radius: 12px;
-      padding: 9px 16px;
+      padding: 8px 15px;
     }
 
     .mind-node.shape-outline .node-accent-bar {
@@ -447,15 +449,21 @@
       box-shadow: 0 0 0 2px var(--accent-glow) !important;
     }
 
-    /* Minimal Side Bracket style */
+    /* Minimal Side Bracket style — uses the least amount of vertical space */
     .mind-node.shape-bracket {
       background: transparent !important;
       box-shadow: none !important;
       border: none !important;
       border-left: 3.5px solid var(--node-color, var(--accent)) !important;
-      border-radius: 3px;
-      padding: 5px 12px;
-      min-width: 60px;
+      border-radius: 2px;
+      padding: 2px 10px;
+      gap: 2px;
+      min-width: 50px;
+    }
+
+    .mind-node.shape-bracket .node-title {
+      line-height: 1.2;
+      padding: 0 2px;
     }
 
     .mind-node.shape-bracket .node-accent-bar {
@@ -2188,6 +2196,20 @@
             <span class="menu-checkmark"></span>
           </div>
           <div class="dropdown-divider"></div>
+          <div style="padding: 4px 11px 2px; font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-dim);">Vertical &amp; Canvas Spread</div>
+          <div class="dropdown-item" data-spacing="compact">
+            <span>Compact Spread</span>
+            <span class="menu-checkmark"></span>
+          </div>
+          <div class="dropdown-item is-active" data-spacing="comfortable">
+            <span>Comfortable Spread</span>
+            <span class="menu-checkmark">✓</span>
+          </div>
+          <div class="dropdown-item" data-spacing="large">
+            <span>Large / Spacious Spread</span>
+            <span class="menu-checkmark"></span>
+          </div>
+          <div class="dropdown-divider"></div>
           <div class="dropdown-item" id="menu-layout-balance">
             <span>Auto-Balance Map</span>
             <span class="dropdown-item-desc">Even branches</span>
@@ -2679,6 +2701,16 @@
                 <button class="ui-btn" data-bnd-opacity="0.15" style="flex:1; border:1px solid var(--border-strong); justify-content:center;">15%</button>
                 <button class="ui-btn" data-bnd-opacity="0.25" style="flex:1; border:1px solid var(--border-strong); justify-content:center;">25%</button>
               </div>
+            </div>
+          </div>
+
+          <!-- Internal Vertical Spacing & Padding -->
+          <div class="form-group">
+            <label class="form-label">Boundary Internal Vertical Spacing</label>
+            <div style="display:flex; gap:6px;" id="bnd-spacing-group">
+              <button class="ui-btn is-active" data-bnd-spacing="compact" style="flex:1; border:1px solid var(--border-strong); justify-content:center;" title="Tight internal spacing & padding">Compact</button>
+              <button class="ui-btn" data-bnd-spacing="comfortable" style="flex:1; border:1px solid var(--border-strong); justify-content:center;" title="Balanced internal spacing">Comfortable</button>
+              <button class="ui-btn" data-bnd-spacing="large" style="flex:1; border:1px solid var(--border-strong); justify-content:center;" title="Generous internal spacing">Large</button>
             </div>
           </div>
 
@@ -3256,18 +3288,21 @@
             const hasDesc = !!n.desc;
             const hasEmoji = !!n.emoji;
             const hasTags = n.tags && n.tags.length > 0;
+            const shape = n.shape || "card";
+            const isMinimal = shape === "bracket" || shape === "plain" || shape === "underline";
 
             const autoW = isRoot
               ? Math.max(160, Math.min(380, textLen * 11 + (hasEmoji ? 70 : 52)))
-              : Math.max(84, Math.min(310, Math.max(textLen * 9, descLen * 6.5) + (hasEmoji ? 60 : 40)));
+              : Math.max(isMinimal ? 60 : 84, Math.min(310, Math.max(textLen * 9, descLen * 6.5) + (hasEmoji ? 60 : (isMinimal ? 24 : 40))));
             w = (n.customWidth && Number.isFinite(n.customWidth)) ? Math.round(n.customWidth) : autoW;
 
-            h = isRoot ? 64 : 44;
+            h = isRoot ? 64 : (shape === "bracket" || shape === "plain" ? 26 : (shape === "underline" ? 30 : 44));
             if (hasDesc) {
               const descLines = Math.ceil((descLen * 8) / Math.max(50, w - 36)) || 1;
-              h += 12 + descLines * 18;
+              h += 10 + descLines * 18;
             }
-            if (hasTags) h += 28;
+            if (hasTags) h += 26;
+            if (n.image) h += 120;
           }
 
           nodeDimensions.set(n.id, { w, h });
@@ -3281,27 +3316,60 @@
           return { isVisible, nodeDimensions };
         }
 
-        // Generous Spacing Constants (Guarantees zero overlapping / touching)
-        const GAP_X = 140; // horizontal edge-to-edge gap
-        const GAP_Y = 36;  // vertical gap between sibling nodes
-        const SUBTREE_MARGIN = 56; // extra buffer between distinct main branches
+        // Spacing Presets: "compact", "comfortable" (default), "large"
+        const SPACING_PRESETS = {
+          compact:     { gapX: 112, gapY: 18, subtreeMargin: 40, downGapX: 56,  downGapY: 84 },
+          comfortable: { gapX: 138, gapY: 28, subtreeMargin: 54, downGapX: 76,  downGapY: 108 },
+          large:       { gapX: 168, gapY: 44, subtreeMargin: 76, downGapX: 104, downGapY: 136 }
+        };
+        const spacingMode = sheet.spacing || "comfortable";
+        const sp = SPACING_PRESETS[spacingMode] || SPACING_PRESETS.comfortable;
 
-        function getSubtreeHeight(nodeId) {
-          if (!isVisible.has(nodeId)) return 0;
-          const dims = nodeDimensions.get(nodeId) || { w: 180, h: 50 };
-          const node = sheet.nodes.find(n => n.id === nodeId);
-          if (node.collapsed) return dims.h;
+        const GAP_X = sp.gapX; // horizontal edge-to-edge gap
+        const GAP_Y = sp.gapY; // base vertical gap between sibling nodes
+        const SUBTREE_MARGIN = sp.subtreeMargin; // extra buffer between distinct main branches
 
-          const kids = childrenMap.get(nodeId) || [];
-          if (kids.length === 0) return dims.h;
+        function isLightweightNode(n) {
+          if (!n) return false;
+          const s = n.shape || "card";
+          return s === "bracket" || s === "plain" || s === "underline";
+        }
 
-          let kidsTotalHeight = 0;
-          kids.forEach((kid, idx) => {
-            kidsTotalHeight += getSubtreeHeight(kid.id);
-            if (idx > 0) kidsTotalHeight += GAP_Y;
-          });
+        function getSharedBoundary(nodeIdA, nodeIdB) {
+          if (!nodeIdA || !nodeIdB) return null;
+          return (sheet.boundaries || []).find(
+            b => Array.isArray(b.nodeIds) && b.nodeIds.includes(nodeIdA) && b.nodeIds.includes(nodeIdB)
+          ) || null;
+        }
 
-          return Math.max(dims.h, kidsTotalHeight);
+        function getPairVerticalGap(nodeA, nodeB) {
+          if (!nodeA || !nodeB) return GAP_Y;
+          const shapeA = nodeA.shape || "card";
+          const shapeB = nodeB.shape || "card";
+          let gap = GAP_Y;
+
+          // Bracket and Plain items use the least amount of vertical space
+          if ((shapeA === "bracket" || shapeA === "plain") && (shapeB === "bracket" || shapeB === "plain")) {
+            gap = Math.max(5, Math.round(GAP_Y * 0.32));
+          } else if (isLightweightNode(nodeA) && isLightweightNode(nodeB)) {
+            gap = Math.max(7, Math.round(GAP_Y * 0.42));
+          } else if (isLightweightNode(nodeA) || isLightweightNode(nodeB)) {
+            gap = Math.max(10, Math.round(GAP_Y * 0.62));
+          }
+
+          // When two adjacent siblings are inside the same Boundary Group, adjust by boundary internalSpacing
+          const sharedBnd = getSharedBoundary(nodeA.id, nodeB.id);
+          if (sharedBnd) {
+            const bndSpace = sharedBnd.internalSpacing || "compact";
+            if (bndSpace === "compact") {
+              gap = Math.max(4, Math.round(gap * 0.65));
+            } else if (bndSpace === "comfortable") {
+              gap = Math.max(6, Math.round(gap * 0.88));
+            } else if (bndSpace === "large") {
+              gap = Math.round(gap * 1.25);
+            }
+          }
+          return gap;
         }
 
         function getNodeBoundaryMargins(nodeId, siblingList) {
@@ -3313,13 +3381,34 @@
             const siblingMembers = siblingList.filter(s => bnd.nodeIds.includes(s.id));
             if (siblingMembers.length === 0) return;
             if (siblingMembers[0].id === nodeId) {
-              topMargin = Math.max(topMargin, 52); // extra room for top boundary border + title tab
+              // Extra top clearance for boundary top border + floating title pill + separation from upper branches
+              topMargin = Math.max(topMargin, 56);
             }
             if (siblingMembers[siblingMembers.length - 1].id === nodeId) {
-              bottomMargin = Math.max(bottomMargin, 44); // extra room for bottom boundary border
+              // Extra bottom clearance for boundary bottom border + separation from lower branches
+              bottomMargin = Math.max(bottomMargin, 42);
             }
           });
           return { topMargin, bottomMargin };
+        }
+
+        function getSubtreeHeight(nodeId) {
+          if (!isVisible.has(nodeId)) return 0;
+          const dims = nodeDimensions.get(nodeId) || { w: 180, h: 50 };
+          const node = sheet.nodes.find(n => n.id === nodeId);
+          if (node.collapsed) return dims.h;
+
+          const kids = (childrenMap.get(nodeId) || []).filter(k => isVisible.has(k.id));
+          if (kids.length === 0) return dims.h;
+
+          let kidsTotalHeight = 0;
+          kids.forEach((kid, idx) => {
+            const m = getNodeBoundaryMargins(kid.id, kids);
+            kidsTotalHeight += getSubtreeHeight(kid.id) + m.topMargin + m.bottomMargin;
+            if (idx > 0) kidsTotalHeight += getPairVerticalGap(kids[idx - 1], kid);
+          });
+
+          return Math.max(dims.h, kidsTotalHeight);
         }
 
         function layoutBranch(nodes, direction, parentX, parentY) {
@@ -3331,7 +3420,7 @@
           let totalSpan = 0;
           nodes.forEach((n, idx) => {
             totalSpan += subtreeHeights[idx] + margins[idx].topMargin + margins[idx].bottomMargin;
-            if (idx > 0) totalSpan += GAP_Y;
+            if (idx > 0) totalSpan += getPairVerticalGap(nodes[idx - 1], n);
           });
 
           let currentY = parentY - totalSpan / 2;
@@ -3354,7 +3443,8 @@
               layoutBranch(kids, direction, node.x, node.y);
             }
 
-            currentY += sh + m.bottomMargin + GAP_Y;
+            const nextGap = idx < nodes.length - 1 ? getPairVerticalGap(node, nodes[idx + 1]) : 0;
+            currentY += sh + m.bottomMargin + nextGap;
           });
         }
 
@@ -3384,7 +3474,7 @@
           layoutMainBranches(rootChildren, 1, root.x, root.y);
 
         } else if (sheet.layout === "tree-down") {
-          layoutSubtreeVertical(root, childrenMap, nodeDimensions, isVisible, 80, 110);
+          layoutSubtreeVertical(root, childrenMap, nodeDimensions, isVisible, sp.downGapX, sp.downGapY);
         }
 
         function layoutMainBranches(mainNodes, direction, rx, ry) {
@@ -3901,17 +3991,34 @@
           if (memberNodes.length === 0) return;
 
           let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
+          let allLightweight = true;
           memberNodes.forEach(n => {
             const dims = nodeDimensions.get(n.id) || { w: 180, h: 50 };
+            const s = n.shape || "card";
+            if (s !== "bracket" && s !== "plain" && s !== "underline") {
+              allLightweight = false;
+            }
             minX = Math.min(minX, n.x - dims.w / 2);
             maxX = Math.max(maxX, n.x + dims.w / 2);
             minY = Math.min(minY, n.y - dims.h / 2);
             maxY = Math.max(maxY, n.y + dims.h / 2);
           });
 
-          const padX = 32;
-          const padTop = 44;
-          const padBottom = 32;
+          const bndSpacing = bnd.internalSpacing || "compact";
+          let padX = 20, padTop = 26, padBottom = 16;
+          if (bndSpacing === "compact") {
+            padX = allLightweight ? 16 : 20;
+            padTop = allLightweight ? 22 : 26;
+            padBottom = allLightweight ? 12 : 16;
+          } else if (bndSpacing === "comfortable") {
+            padX = 24;
+            padTop = 32;
+            padBottom = 22;
+          } else if (bndSpacing === "large") {
+            padX = 34;
+            padTop = 42;
+            padBottom = 30;
+          }
           const bx = minX - padX;
           const by = minY - padTop;
           const bw = (maxX - minX) + padX * 2;
@@ -5201,6 +5308,7 @@
           color: pickHarmoniousColor(),
           borderStyle: "dashed",
           fillOpacity: 0.08,
+          internalSpacing: "compact",
           presentTogether: true
         };
 
@@ -5247,6 +5355,12 @@
         const currentOpacity = bnd.fillOpacity !== undefined ? String(bnd.fillOpacity) : "0.08";
         document.querySelectorAll("#bnd-opacity-group button").forEach(btn => {
           btn.classList.toggle("is-active", btn.dataset.bndOpacity === currentOpacity);
+        });
+
+        // Internal Spacing
+        const currentBndSpacing = bnd.internalSpacing || "compact";
+        document.querySelectorAll("#bnd-spacing-group button").forEach(btn => {
+          btn.classList.toggle("is-active", btn.dataset.bndSpacing === currentBndSpacing);
         });
 
         // Present together toggle
@@ -6270,6 +6384,13 @@
         });
       });
 
+      document.querySelectorAll("#bnd-spacing-group button").forEach(btn => {
+        btn.addEventListener("click", () => {
+          document.querySelectorAll("#bnd-spacing-group button").forEach(b => b.classList.remove("is-active"));
+          btn.classList.add("is-active");
+        });
+      });
+
       document.getElementById("bnd-btn-select-all").addEventListener("click", () => {
         document.querySelectorAll("#bnd-topics-checklist input").forEach(cb => cb.checked = true);
         updateBndSelectedCount();
@@ -6314,6 +6435,9 @@
         const activeOpacityBtn = document.querySelector("#bnd-opacity-group button.is-active");
         const fillOpacity = activeOpacityBtn ? parseFloat(activeOpacityBtn.dataset.bndOpacity) : 0.08;
 
+        const activeSpacingBtn = document.querySelector("#bnd-spacing-group button.is-active");
+        const internalSpacing = activeSpacingBtn ? activeSpacingBtn.dataset.bndSpacing : "compact";
+
         const checklistEl = document.getElementById("bnd-topics-checklist");
         const checkedNodeIds = Array.from(checklistEl.querySelectorAll("input:checked")).map(cb => cb.dataset.nid);
 
@@ -6335,6 +6459,7 @@
         bnd.color = color;
         bnd.borderStyle = borderStyle;
         bnd.fillOpacity = fillOpacity;
+        bnd.internalSpacing = internalSpacing;
         bnd.nodeIds = checkedNodeIds;
         const presentTogetherCb = document.getElementById("bnd-present-together");
         bnd.presentTogether = presentTogetherCb ? presentTogetherCb.checked : true;
@@ -6934,8 +7059,21 @@
         const labelEl = document.getElementById("current-layout-label");
         if (labelEl) labelEl.textContent = labels[sheet.layout] || "Radial Map";
 
-        document.querySelectorAll("#layout-menu .dropdown-item").forEach(item => {
+        document.querySelectorAll("#layout-menu .dropdown-item[data-layout]").forEach(item => {
           const isActive = item.dataset.layout === sheet.layout;
+          item.classList.toggle("is-active", isActive);
+          let check = item.querySelector(".menu-checkmark");
+          if (!check) {
+            check = document.createElement("span");
+            check.className = "menu-checkmark";
+            item.appendChild(check);
+          }
+          check.textContent = isActive ? "✓" : "";
+        });
+
+        const curSpacing = sheet.spacing || "comfortable";
+        document.querySelectorAll("#layout-menu .dropdown-item[data-spacing]").forEach(item => {
+          const isActive = item.dataset.spacing === curSpacing;
           item.classList.toggle("is-active", isActive);
           let check = item.querySelector(".menu-checkmark");
           if (!check) {
@@ -7275,6 +7413,18 @@
           pushHistory();
           render();
           fitView(true);
+        });
+      });
+
+      document.querySelectorAll("#layout-menu .dropdown-item[data-spacing]").forEach(item => {
+        item.addEventListener("click", () => {
+          closeAllDropdowns();
+          const sheet = getActiveSheet();
+          sheet.spacing = item.dataset.spacing || "comfortable";
+          updateLayoutLabel();
+          pushHistory();
+          render();
+          showToast(`Vertical Spread: ${sheet.spacing.charAt(0).toUpperCase() + sheet.spacing.slice(1)}`);
         });
       });
 
