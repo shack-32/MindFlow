@@ -1295,6 +1295,67 @@
       box-shadow: 0 0 0 2px var(--accent);
     }
 
+    .color-swatch-custom {
+      position: relative;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      background: conic-gradient(from 0deg, #f43f5e, #f59e0b, #10b981, #06b6d4, #6366f1, #ec4899, #f43f5e);
+      border: 1.5px dashed rgba(255, 255, 255, 0.75);
+      color: #ffffff;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+      overflow: hidden;
+      flex-shrink: 0;
+    }
+
+    .color-swatch-custom::before {
+      content: "";
+      position: absolute;
+      inset: 2px;
+      border-radius: 50%;
+      background: var(--custom-swatch-bg, rgba(15, 23, 42, 0.72));
+      z-index: 0;
+      transition: background 0.15s ease;
+    }
+
+    .color-swatch-custom svg {
+      position: relative;
+      z-index: 1;
+      width: 11px;
+      height: 11px;
+      stroke-width: 2.6;
+      filter: drop-shadow(0 1px 2px rgba(0, 0, 0, 0.8));
+      pointer-events: none;
+    }
+
+    .color-swatch-custom:hover {
+      transform: scale(1.2);
+      border-style: solid;
+      border-color: #ffffff;
+    }
+
+    .color-swatch-custom.is-selected {
+      border-style: solid;
+      border-color: #ffffff;
+      box-shadow: 0 0 0 2px var(--accent);
+    }
+
+    .color-swatch-custom input[type="color"] {
+      position: absolute;
+      inset: -4px;
+      width: 30px;
+      height: 30px;
+      opacity: 0;
+      cursor: pointer;
+      border: none;
+      padding: 0;
+      z-index: 2;
+    }
+
     /* Dropdown Menus: Seamless Hover & Click Desktop Menus */
     .dropdown-container {
       position: relative;
@@ -2130,14 +2191,24 @@
 
     <!-- Node Properties Inspector -->
     <div id="node-inspector">
-      <div class="color-swatch-list">
+      <div class="color-swatch-list" id="inspector-swatch-list">
         <div class="color-swatch is-selected" data-color="#6366f1" style="background:#6366f1" title="Indigo"></div>
+        <div class="color-swatch" data-color="#3b82f6" style="background:#3b82f6" title="Royal Blue"></div>
         <div class="color-swatch" data-color="#06b6d4" style="background:#06b6d4" title="Cyan"></div>
+        <div class="color-swatch" data-color="#14b8a6" style="background:#14b8a6" title="Teal"></div>
         <div class="color-swatch" data-color="#10b981" style="background:#10b981" title="Emerald"></div>
+        <div class="color-swatch" data-color="#84cc16" style="background:#84cc16" title="Lime"></div>
+        <div class="color-swatch" data-color="#eab308" style="background:#eab308" title="Gold"></div>
         <div class="color-swatch" data-color="#f59e0b" style="background:#f59e0b" title="Amber"></div>
-        <div class="color-swatch" data-color="#ec4899" style="background:#ec4899" title="Rose"></div>
+        <div class="color-swatch" data-color="#f97316" style="background:#f97316" title="Orange"></div>
+        <div class="color-swatch" data-color="#f43f5e" style="background:#f43f5e" title="Crimson"></div>
+        <div class="color-swatch" data-color="#ec4899" style="background:#ec4899" title="Rose Pink"></div>
         <div class="color-swatch" data-color="#8b5cf6" style="background:#8b5cf6" title="Purple"></div>
         <div class="color-swatch" data-color="#64748b" style="background:#64748b" title="Slate"></div>
+        <label class="color-swatch-custom" id="inspector-custom-color-swatch" title="Choose Custom Color (+)">
+          <svg viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-linecap="round"><line x1="6" y1="2" x2="6" y2="10"/><line x1="2" y1="6" x2="10" y2="6"/></svg>
+          <input type="color" id="inspector-custom-color-input" value="#6366f1" title="Select Custom Color" />
+        </label>
       </div>
 
       <div class="toolbar-divider" id="inspector-shape-divider"></div>
@@ -3981,8 +4052,10 @@
           e.preventDefault();
           e.stopPropagation();
           state.selectedNodeId = node.id;
-          state.selectedNodeIds.clear();
-          state.selectedNodeIds.add(node.id);
+          if (!state.selectedNodeIds.has(node.id)) {
+            state.selectedNodeIds.clear();
+            state.selectedNodeIds.add(node.id);
+          }
           render();
           openContextMenu(e.clientX, e.clientY, true);
         });
@@ -4934,11 +5007,13 @@
 
       function flipNodeSide(nodeId) {
         const sheet = getActiveSheet();
-        const targetId = nodeId || state.selectedNodeId;
-        const node = sheet.nodes.find(n => n.id === targetId);
-        if (!node || node.id === "root") return;
-
-        const newSide = (node.side === "left") ? "right" : "left";
+        const targetIds = nodeId
+          ? [nodeId]
+          : (state.selectedNodeIds.size > 0 ? Array.from(state.selectedNodeIds) : [state.selectedNodeId]);
+        const validNodes = targetIds
+          .map(id => sheet.nodes.find(n => n.id === id))
+          .filter(n => n && n.id !== "root");
+        if (validNodes.length === 0) return;
 
         function updateSubtreeSide(nid, side) {
           const cur = sheet.nodes.find(n => n.id === nid);
@@ -4946,10 +5021,16 @@
           sheet.nodes.filter(n => n.parentId === nid).forEach(c => updateSubtreeSide(c.id, side));
         }
 
-        updateSubtreeSide(node.id, newSide);
+        let lastSide = "right";
+        validNodes.forEach(node => {
+          const newSide = (node.side === "left") ? "right" : "left";
+          lastSide = newSide;
+          updateSubtreeSide(node.id, newSide);
+        });
+
         pushHistory();
         render();
-        showToast(`Branch flipped to ${newSide.toUpperCase()}`);
+        showToast(validNodes.length > 1 ? `Flipped ${validNodes.length} branches` : `Branch flipped to ${lastSide.toUpperCase()}`);
       }
 
       function balanceMapLayout() {
@@ -5009,39 +5090,53 @@
 
       function duplicateSelectedBranch() {
         const sheet = getActiveSheet();
-        const current = sheet.nodes.find(n => n.id === state.selectedNodeId);
-        if (!current || current.id === "root") return;
+        const rawIds = state.selectedNodeIds.size > 0
+          ? Array.from(state.selectedNodeIds)
+          : (state.selectedNodeId ? [state.selectedNodeId] : []);
+        const topLevelTargets = rawIds
+          .filter(id => id !== "root" && !rawIds.some(otherId => otherId !== id && isAncestor(otherId, id)))
+          .map(id => sheet.nodes.find(n => n.id === id))
+          .filter(Boolean);
+        if (topLevelTargets.length === 0) return;
 
-        const idMap = new Map();
-        const nodesToClone = [];
+        const newRootIds = [];
+        topLevelTargets.forEach(current => {
+          const idMap = new Map();
+          const nodesToClone = [];
 
-        function collect(id) {
-          const n = sheet.nodes.find(item => item.id === id);
-          if (n) {
-            nodesToClone.push(n);
-            sheet.nodes.filter(item => item.parentId === id).forEach(child => collect(child.id));
+          function collect(id) {
+            const n = sheet.nodes.find(item => item.id === id);
+            if (n) {
+              nodesToClone.push(n);
+              sheet.nodes.filter(item => item.parentId === id).forEach(child => collect(child.id));
+            }
           }
+          collect(current.id);
+
+          nodesToClone.forEach(n => {
+            idMap.set(n.id, `node-${Date.now()}-${Math.floor(Math.random() * 100000)}`);
+          });
+
+          const newBranch = nodesToClone.map(n => {
+            return {
+              ...JSON.parse(JSON.stringify(n)),
+              id: idMap.get(n.id),
+              parentId: n.id === current.id ? current.parentId : idMap.get(n.parentId),
+              text: n.id === current.id ? `${n.text} (Copy)` : n.text,
+              x: n.x ? n.x + 40 : undefined,
+              y: n.y ? n.y + 40 : undefined
+            };
+          });
+
+          sheet.nodes.push(...newBranch);
+          if (newBranch[0]) newRootIds.push(newBranch[0].id);
+        });
+
+        if (newRootIds.length > 0) {
+          state.selectedNodeIds = new Set(newRootIds);
+          state.selectedNodeId = newRootIds[0];
         }
-        collect(current.id);
-
-        nodesToClone.forEach(n => {
-          idMap.set(n.id, `node-${Date.now()}-${Math.floor(Math.random() * 10000)}`);
-        });
-
-        const newBranch = nodesToClone.map(n => {
-          return {
-            ...JSON.parse(JSON.stringify(n)),
-            id: idMap.get(n.id),
-            parentId: n.id === current.id ? current.parentId : idMap.get(n.parentId),
-            text: n.id === current.id ? `${n.text} (Copy)` : n.text,
-            x: n.x ? n.x + 40 : undefined,
-            y: n.y ? n.y + 40 : undefined
-          };
-        });
-
-        sheet.nodes.push(...newBranch);
-        selectNode(newBranch[0].id);
-        showToast("Branch Duplicated");
+        showToast(newRootIds.length > 1 ? `Duplicated ${newRootIds.length} Branches` : "Branch Duplicated");
         pushHistory();
         render();
       }
@@ -5570,6 +5665,9 @@
         const shapeGroupEl = document.getElementById("inspector-shape-group");
         const shapeDividerEl = document.getElementById("inspector-shape-divider");
 
+        const customColorSwatch = document.getElementById("inspector-custom-color-swatch");
+        const customColorInput = document.getElementById("inspector-custom-color-input");
+
         if (state.selectedBoundaryId) {
           const bnd = (sheet.boundaries || []).find(b => b.id === state.selectedBoundaryId);
           if (!bnd) {
@@ -5579,9 +5677,19 @@
           inspectorEl.classList.add("is-visible");
           inspectorEl.classList.add("is-boundary-mode");
 
-          document.querySelectorAll(".color-swatch").forEach(swatch => {
-            swatch.classList.toggle("is-selected", swatch.dataset.color === bnd.color);
+          let matchedPreset = false;
+          document.querySelectorAll("#inspector-swatch-list .color-swatch").forEach(swatch => {
+            const isMatch = (swatch.dataset.color || "").toLowerCase() === (bnd.color || "").toLowerCase();
+            if (isMatch) matchedPreset = true;
+            swatch.classList.toggle("is-selected", isMatch);
           });
+          if (customColorSwatch) {
+            customColorSwatch.classList.toggle("is-selected", !matchedPreset && Boolean(bnd.color));
+            customColorSwatch.style.setProperty("--custom-swatch-bg", !matchedPreset && bnd.color ? bnd.color : "rgba(15, 23, 42, 0.72)");
+          }
+          if (customColorInput && bnd.color) {
+            customColorInput.value = bnd.color;
+          }
 
           if (shapeGroupEl) shapeGroupEl.style.display = "none";
           if (shapeDividerEl) shapeDividerEl.style.display = "none";
@@ -5606,7 +5714,8 @@
         document.getElementById("inspector-btn-toggle-fold").style.display = "flex";
         document.getElementById("inspector-btn-duplicate").style.display = "flex";
 
-        const selected = sheet.nodes.find(n => n.id === state.selectedNodeId);
+        const selected = sheet.nodes.find(n => n.id === state.selectedNodeId) ||
+                         (state.selectedNodeIds.size > 0 ? sheet.nodes.find(n => state.selectedNodeIds.has(n.id)) : null);
         if (!selected) {
           inspectorEl.classList.remove("is-visible");
           return;
@@ -5614,9 +5723,20 @@
 
         inspectorEl.classList.add("is-visible");
 
-        document.querySelectorAll(".color-swatch").forEach(swatch => {
-          swatch.classList.toggle("is-selected", swatch.dataset.color === selected.color);
+        const activeColor = (selected.color || "#6366f1").toLowerCase();
+        let matchedPreset = false;
+        document.querySelectorAll("#inspector-swatch-list .color-swatch").forEach(swatch => {
+          const isMatch = (swatch.dataset.color || "").toLowerCase() === activeColor;
+          if (isMatch) matchedPreset = true;
+          swatch.classList.toggle("is-selected", isMatch);
         });
+        if (customColorSwatch) {
+          customColorSwatch.classList.toggle("is-selected", !matchedPreset);
+          customColorSwatch.style.setProperty("--custom-swatch-bg", !matchedPreset ? activeColor : "rgba(15, 23, 42, 0.72)");
+        }
+        if (customColorInput && activeColor.startsWith("#")) {
+          customColorInput.value = activeColor;
+        }
 
         const activeShape = selected.shape || "card";
         document.querySelectorAll(".inspector-shape-btn").forEach(btn => {
@@ -5627,27 +5747,61 @@
         foldBtn.querySelector("span").textContent = selected.collapsed ? "Unfold" : "Fold";
       }
 
-      document.querySelectorAll(".color-swatch").forEach(swatch => {
-        swatch.addEventListener("click", () => {
-          const sheet = getActiveSheet();
-          if (state.selectedBoundaryId) {
-            const bnd = (sheet.boundaries || []).find(b => b.id === state.selectedBoundaryId);
-            if (bnd) {
-              bnd.color = swatch.dataset.color;
-              pushHistory();
-              render();
-              updateInspectorBar();
-            }
-            return;
-          }
-          const node = sheet.nodes.find(n => n.id === state.selectedNodeId);
-          if (node) {
-            node.color = swatch.dataset.color;
-            pushHistory();
+      function applyColorToSelection(newColor, commitHistory = true) {
+        if (!newColor) return;
+        const sheet = getActiveSheet();
+        if (state.selectedBoundaryId) {
+          const bnd = (sheet.boundaries || []).find(b => b.id === state.selectedBoundaryId);
+          if (bnd) {
+            bnd.color = newColor;
+            if (commitHistory) pushHistory();
             render();
+            updateInspectorBar();
           }
+          return;
+        }
+        const targets = state.selectedNodeIds.size > 0
+          ? sheet.nodes.filter(n => state.selectedNodeIds.has(n.id))
+          : sheet.nodes.filter(n => n.id === state.selectedNodeId);
+        if (targets.length > 0) {
+          targets.forEach(n => { n.color = newColor; });
+          if (commitHistory) pushHistory();
+          render();
+          updateInspectorBar();
+          if (commitHistory && targets.length > 1) {
+            showToast(`Color applied to ${targets.length} selected topics`);
+          }
+        }
+      }
+
+      document.querySelectorAll("#inspector-swatch-list .color-swatch").forEach(swatch => {
+        swatch.addEventListener("click", () => {
+          applyColorToSelection(swatch.dataset.color, true);
         });
       });
+
+      const inspectorCustomColorInput = document.getElementById("inspector-custom-color-input");
+      if (inspectorCustomColorInput) {
+        inspectorCustomColorInput.addEventListener("input", (e) => {
+          applyColorToSelection(e.target.value, false);
+        });
+        inspectorCustomColorInput.addEventListener("change", (e) => {
+          applyColorToSelection(e.target.value, true);
+        });
+      }
+
+      function toggleFoldForSelection() {
+        const sheet = getActiveSheet();
+        const targets = state.selectedNodeIds.size > 0
+          ? sheet.nodes.filter(n => state.selectedNodeIds.has(n.id) && n.id !== "root")
+          : sheet.nodes.filter(n => n.id === state.selectedNodeId && n.id !== "root");
+        if (targets.length > 0) {
+          const nextCollapsed = !targets[0].collapsed;
+          targets.forEach(n => { n.collapsed = nextCollapsed; });
+          pushHistory();
+          render();
+        }
+      }
 
       document.getElementById("inspector-btn-boundary").addEventListener("click", createBoundaryForSelected);
       document.getElementById("inspector-btn-edit-details").addEventListener("click", openDetailsModal);
@@ -5661,15 +5815,7 @@
         });
       }
 
-      document.getElementById("inspector-btn-toggle-fold").addEventListener("click", () => {
-        const sheet = getActiveSheet();
-        const node = sheet.nodes.find(n => n.id === state.selectedNodeId);
-        if (node) {
-          node.collapsed = !node.collapsed;
-          pushHistory();
-          render();
-        }
-      });
+      document.getElementById("inspector-btn-toggle-fold").addEventListener("click", toggleFoldForSelection);
 
       // Context Menu Action Listeners
       document.getElementById("ctx-add-child").addEventListener("click", addChildNode);
@@ -5684,15 +5830,7 @@
       }
       document.getElementById("ctx-edit-details").addEventListener("click", openDetailsModal);
       document.getElementById("ctx-duplicate").addEventListener("click", duplicateSelectedBranch);
-      document.getElementById("ctx-fold").addEventListener("click", () => {
-        const sheet = getActiveSheet();
-        const node = sheet.nodes.find(n => n.id === state.selectedNodeId);
-        if (node) {
-          node.collapsed = !node.collapsed;
-          pushHistory();
-          render();
-        }
-      });
+      document.getElementById("ctx-fold").addEventListener("click", toggleFoldForSelection);
       document.getElementById("ctx-flip-side")?.addEventListener("click", () => {
         closeContextMenu();
         flipNodeSide();
@@ -6425,13 +6563,7 @@
         } else if (e.key === "f" || e.key === "F") {
           fitView(true);
         } else if (e.key === " ") {
-          const sheet = getActiveSheet();
-          const node = sheet.nodes.find(n => n.id === state.selectedNodeId);
-          if (node) {
-            node.collapsed = !node.collapsed;
-            pushHistory();
-            render();
-          }
+          toggleFoldForSelection();
         } else if ((e.ctrlKey || e.metaKey) && (e.key === "z" || e.key === "Z")) {
           e.preventDefault();
           if (e.shiftKey) redo();
