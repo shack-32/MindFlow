@@ -871,6 +871,13 @@
       box-shadow: 0 22px 50px rgba(0, 0, 0, 0.5), 0 0 0 2.5px var(--accent) !important;
       transition: none !important;
       z-index: 1000 !important;
+      pointer-events: none !important;
+    }
+
+    .mind-node.is-dragging *,
+    .mind-node.is-dragging::before,
+    .mind-node.is-dragging::after {
+      pointer-events: none !important;
     }
 
     .mind-node.is-drop-target {
@@ -1161,6 +1168,40 @@
       cursor: pointer;
       pointer-events: stroke;
       transition: opacity 0.25s ease;
+    }
+
+    path.relationship-hit-path {
+      fill: none;
+      stroke: transparent;
+      stroke-width: 16px;
+      cursor: grab;
+      pointer-events: stroke;
+    }
+
+    path.relationship-hit-path:active {
+      cursor: grabbing;
+    }
+
+    .connector-port-handle.rel-port-handle {
+      stroke: #ec4899;
+    }
+
+    .connector-port-handle.rel-port-handle:hover,
+    .connector-port-handle.rel-port-handle:active {
+      fill: #ec4899;
+      stroke: #ffffff;
+    }
+
+    .port-snap-guide.is-rel-guide {
+      fill: rgba(236, 72, 153, 0.22);
+      stroke: rgba(244, 114, 182, 0.9);
+    }
+
+    .port-snap-guide.is-rel-guide.is-active {
+      fill: #ec4899;
+      stroke: #ffffff;
+      stroke-width: 2.5px;
+      filter: drop-shadow(0 0 8px rgba(236, 72, 153, 0.95));
     }
 
     path.relationship-path:hover,
@@ -2796,6 +2837,28 @@
         <button class="ui-btn inspector-shape-btn" data-shape="bracket" style="padding:4px 7px; font-size:0.72rem;" title="Minimal Side Bracket Style">Bracket</button>
       </div>
 
+      <div id="inspector-rel-ports-group" style="display:none; align-items:center; gap:8px;" title="Pin Relationship Arrow Start &amp; End Sides">
+        <div style="display:flex; align-items:center; gap:3px; background:rgba(255,255,255,0.04); padding:2px 5px; border-radius:8px; border:1px solid var(--border-subtle);">
+          <span style="font-size:0.68rem; font-weight:700; color:var(--text-muted); padding:0 4px;">Start:</span>
+          <button class="ui-btn inspector-rel-port-btn" data-rel-end="from" data-port="auto" style="padding:3px 6px; font-size:0.7rem;" title="Auto-select nearest start side">Auto</button>
+          <button class="ui-btn inspector-rel-port-btn" data-rel-end="from" data-port="top" style="padding:3px 6px; font-size:0.7rem;" title="Pin start to Top">Top</button>
+          <button class="ui-btn inspector-rel-port-btn" data-rel-end="from" data-port="right" style="padding:3px 6px; font-size:0.7rem;" title="Pin start to Right">Right</button>
+          <button class="ui-btn inspector-rel-port-btn" data-rel-end="from" data-port="bottom" style="padding:3px 6px; font-size:0.7rem;" title="Pin start to Bottom">Bottom</button>
+          <button class="ui-btn inspector-rel-port-btn" data-rel-end="from" data-port="left" style="padding:3px 6px; font-size:0.7rem;" title="Pin start to Left">Left</button>
+        </div>
+        <div style="display:flex; align-items:center; gap:3px; background:rgba(255,255,255,0.04); padding:2px 5px; border-radius:8px; border:1px solid var(--border-subtle);">
+          <span style="font-size:0.68rem; font-weight:700; color:var(--text-muted); padding:0 4px;">End:</span>
+          <button class="ui-btn inspector-rel-port-btn" data-rel-end="to" data-port="auto" style="padding:3px 6px; font-size:0.7rem;" title="Auto-select nearest end side">Auto</button>
+          <button class="ui-btn inspector-rel-port-btn" data-rel-end="to" data-port="top" style="padding:3px 6px; font-size:0.7rem;" title="Pin end to Top">Top</button>
+          <button class="ui-btn inspector-rel-port-btn" data-rel-end="to" data-port="right" style="padding:3px 6px; font-size:0.7rem;" title="Pin end to Right">Right</button>
+          <button class="ui-btn inspector-rel-port-btn" data-rel-end="to" data-port="bottom" style="padding:3px 6px; font-size:0.7rem;" title="Pin end to Bottom">Bottom</button>
+          <button class="ui-btn inspector-rel-port-btn" data-rel-end="to" data-port="left" style="padding:3px 6px; font-size:0.7rem;" title="Pin end to Left">Left</button>
+        </div>
+        <button class="ui-btn" id="inspector-btn-rel-label" style="padding:4px 8px; font-size:0.72rem;" title="Edit Relationship Label">
+          <span>Edit Label</span>
+        </button>
+      </div>
+
       <div class="toolbar-divider"></div>
 
       <button class="ui-btn" id="inspector-btn-bnd-settings" style="display:none;" title="Boundary Advanced Settings">
@@ -4131,6 +4194,74 @@
         };
       }
 
+      function resolveRelationshipPorts(fromNode, fromDim, toNode, toDim, rel) {
+        const auto = getAutoBranchPorts(fromNode, fromDim, toNode, toDim, "freeform");
+        return {
+          fromPort: (rel && rel.fromPort && PORT_SIDES.includes(rel.fromPort)) ? rel.fromPort : auto.fromPort,
+          toPort: (rel && rel.toPort && PORT_SIDES.includes(rel.toPort)) ? rel.toPort : auto.toPort
+        };
+      }
+
+      function computeRelationshipGeometry(fromNode, fromDim, toNode, toDim, rel) {
+        const ports = resolveRelationshipPorts(fromNode, fromDim, toNode, toDim, rel);
+        const p1 = getNodePortPoint(fromNode, fromDim, ports.fromPort);
+        const p2 = getNodePortPoint(toNode, toDim, ports.toPort);
+
+        const x1 = p1.x;
+        const y1 = p1.y;
+        const x2 = p2.x;
+        const y2 = p2.y;
+
+        const midX = (x1 + x2) / 2;
+        const midY = (y1 + y2) / 2;
+        const dx = x2 - x1;
+        const dy = y2 - y1;
+        const dist = Math.hypot(dx, dy) || 1;
+
+        const sumNx = (p1.nx || 0) + (p2.nx || 0);
+        const sumNy = (p1.ny || 0) + (p2.ny || 0);
+        const sumLen = Math.hypot(sumNx, sumNy);
+
+        let baseCx, baseCy;
+        if (sumLen > 0.1) {
+          const archDist = Math.max(55, Math.min(150, dist * 0.36));
+          baseCx = midX + (sumNx / sumLen) * archDist;
+          baseCy = midY + (sumNy / sumLen) * archDist;
+        } else {
+          const curvature = 55;
+          baseCx = midX - (dy / dist) * curvature;
+          baseCy = midY + (dx / dist) * curvature;
+        }
+
+        const curOffX = rel.ctrlOffsetX !== undefined ? rel.ctrlOffsetX : (rel.labelOffsetX || 0);
+        const curOffY = rel.ctrlOffsetY !== undefined ? rel.ctrlOffsetY : (rel.labelOffsetY || 0);
+
+        const cx = baseCx + curOffX;
+        const cy = baseCy + curOffY;
+        const apexX = 0.5 * midX + 0.5 * cx;
+        const apexY = 0.5 * midY + 0.5 * cy;
+        const pathD = `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
+
+        return {
+          ports,
+          p1,
+          p2,
+          x1,
+          y1,
+          x2,
+          y2,
+          midX,
+          midY,
+          baseCx,
+          baseCy,
+          cx,
+          cy,
+          apexX,
+          apexY,
+          pathD
+        };
+      }
+
       function buildConnectorBezierPath(p1, p2) {
         const dx = p2.x - p1.x;
         const dy = p2.y - p1.y;
@@ -4159,6 +4290,40 @@
           return { w: el.offsetWidth, h: el.offsetHeight };
         }
         return { w: 180, h: 54 };
+      }
+
+      function updateRelationshipsLive(overridePosMap = null) {
+        const sheet = getActiveSheet();
+        (sheet.relationships || []).forEach(rel => {
+          const rawFrom = sheet.nodes.find(n => n.id === rel.fromId);
+          const rawTo = sheet.nodes.find(n => n.id === rel.toId);
+          if (!rawFrom || !rawTo) return;
+
+          const fromNode = (overridePosMap && overridePosMap.has(rawFrom.id)) ? overridePosMap.get(rawFrom.id) : rawFrom;
+          const toNode = (overridePosMap && overridePosMap.has(rawTo.id)) ? overridePosMap.get(rawTo.id) : rawTo;
+          const fromDim = getLiveNodeDim(rawFrom.id);
+          const toDim = getLiveNodeDim(rawTo.id);
+
+          const geom = computeRelationshipGeometry(fromNode, fromDim, toNode, toDim, rel);
+
+          const pathEl = document.getElementById(`rel-path-${rel.id}`);
+          const hitEl = document.getElementById(`rel-hit-${rel.id}`);
+          const labelEl = document.getElementById(`rel-label-${rel.id}`);
+          const fromH = document.getElementById(`rel-from-handle-${rel.id}`);
+          const toH = document.getElementById(`rel-to-handle-${rel.id}`);
+
+          if (pathEl) pathEl.setAttribute("d", geom.pathD);
+          if (hitEl) hitEl.setAttribute("d", geom.pathD);
+          if (labelEl) labelEl.setAttribute("transform", `translate(${geom.apexX}, ${geom.apexY})`);
+          if (fromH) {
+            fromH.setAttribute("cx", geom.p1.x);
+            fromH.setAttribute("cy", geom.p1.y);
+          }
+          if (toH) {
+            toH.setAttribute("cx", geom.p2.x);
+            toH.setAttribute("cy", geom.p2.y);
+          }
+        });
       }
 
       function updateFreeformConnectorsLive() {
@@ -4190,6 +4355,7 @@
             toH.setAttribute("cy", p2.y);
           }
         });
+        updateRelationshipsLive();
       }
 
       function initConnectorPortDrag(startEvent, node, parent, endMode) {
@@ -4295,6 +4461,127 @@
           if (hitEl) hitEl.setAttribute("d", newD);
           if (fromH) { fromH.setAttribute("cx", p1.x); fromH.setAttribute("cy", p1.y); }
           if (toH) { toH.setAttribute("cx", p2.x); toH.setAttribute("cy", p2.y); }
+        }
+
+        function onUp() {
+          window.removeEventListener("mousemove", onMove);
+          window.removeEventListener("mouseup", onUp);
+          portSnapGuidesGroup.innerHTML = "";
+
+          if (hasDragged) {
+            pushHistory();
+            render();
+            if (lastSnappedLabel) showToast(lastSnappedLabel);
+          } else {
+            render();
+          }
+        }
+
+        window.addEventListener("mousemove", onMove);
+        window.addEventListener("mouseup", onUp);
+      }
+
+      function initRelationshipPortDrag(startEvent, rel, fromNode, toNode, endMode) {
+        if (startEvent.button !== 0 || state.isPresenting) return;
+        startEvent.stopPropagation();
+        startEvent.preventDefault();
+
+        state.selectedRelId = rel.id;
+        state.selectedConnectorNodeId = null;
+        state.selectedBoundaryId = null;
+        state.selectedNodeId = null;
+        state.selectedNodeIds.clear();
+
+        const fromDim = getLiveNodeDim(fromNode.id);
+        const toDim = getLiveNodeDim(toNode.id);
+
+        const fromPorts = PORT_SIDES.map(side => getNodePortPoint(fromNode, fromDim, side));
+        const toPorts = PORT_SIDES.map(side => getNodePortPoint(toNode, toDim, side));
+
+        portSnapGuidesGroup.innerHTML = "";
+        const guideEls = { from: {}, to: {} };
+
+        fromPorts.forEach(pt => {
+          const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          c.setAttribute("class", "port-snap-guide is-rel-guide");
+          c.setAttribute("cx", pt.x);
+          c.setAttribute("cy", pt.y);
+          c.setAttribute("r", "5.5");
+          portSnapGuidesGroup.appendChild(c);
+          guideEls.from[pt.port] = c;
+        });
+
+        toPorts.forEach(pt => {
+          const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          c.setAttribute("class", "port-snap-guide is-rel-guide");
+          c.setAttribute("cx", pt.x);
+          c.setAttribute("cy", pt.y);
+          c.setAttribute("r", "5.5");
+          portSnapGuidesGroup.appendChild(c);
+          guideEls.to[pt.port] = c;
+        });
+
+        const pathEl = document.getElementById(`rel-path-${rel.id}`);
+        const hitEl = document.getElementById(`rel-hit-${rel.id}`);
+        const labelEl = document.getElementById(`rel-label-${rel.id}`);
+        const fromH = document.getElementById(`rel-from-handle-${rel.id}`);
+        const toH = document.getElementById(`rel-to-handle-${rel.id}`);
+
+        if (pathEl) pathEl.classList.add("is-selected");
+        if (fromH) fromH.classList.add("is-visible");
+        if (toH) toH.classList.add("is-visible");
+
+        let hasDragged = false;
+        let lastSnappedLabel = "";
+        const startClientX = startEvent.clientX;
+        const startClientY = startEvent.clientY;
+
+        function onMove(ev) {
+          if (Math.hypot(ev.clientX - startClientX, ev.clientY - startClientY) > 3) {
+            hasDragged = true;
+          }
+          if (!hasDragged) return;
+
+          const wx = (ev.clientX - state.camera.x) / state.camera.zoom;
+          const wy = (ev.clientY - state.camera.y) / state.camera.zoom;
+
+          let bestFrom = fromPorts[0];
+          let minFromDist = Infinity;
+          fromPorts.forEach(pt => {
+            const d = Math.hypot(wx - pt.x, wy - pt.y);
+            if (d < minFromDist) { minFromDist = d; bestFrom = pt; }
+          });
+
+          let bestTo = toPorts[0];
+          let minToDist = Infinity;
+          toPorts.forEach(pt => {
+            const d = Math.hypot(wx - pt.x, wy - pt.y);
+            if (d < minToDist) { minToDist = d; bestTo = pt; }
+          });
+
+          Object.values(guideEls.from).forEach(el => { el.classList.remove("is-active"); el.setAttribute("r", "5.5"); });
+          Object.values(guideEls.to).forEach(el => { el.classList.remove("is-active"); el.setAttribute("r", "5.5"); });
+
+          const targetEnd = endMode === "auto" ? (minFromDist < minToDist ? "from" : "to") : endMode;
+
+          if (targetEnd === "from") {
+            rel.fromPort = bestFrom.port;
+            const gEl = guideEls.from[bestFrom.port];
+            if (gEl) { gEl.classList.add("is-active"); gEl.setAttribute("r", "7.5"); }
+            lastSnappedLabel = `Pinned relationship start to ${bestFrom.port.toUpperCase()}`;
+          } else {
+            rel.toPort = bestTo.port;
+            const gEl = guideEls.to[bestTo.port];
+            if (gEl) { gEl.classList.add("is-active"); gEl.setAttribute("r", "7.5"); }
+            lastSnappedLabel = `Pinned relationship end to ${bestTo.port.toUpperCase()}`;
+          }
+
+          const geom = computeRelationshipGeometry(fromNode, fromDim, toNode, toDim, rel);
+          if (pathEl) pathEl.setAttribute("d", geom.pathD);
+          if (hitEl) hitEl.setAttribute("d", geom.pathD);
+          if (labelEl) labelEl.setAttribute("transform", `translate(${geom.apexX}, ${geom.apexY})`);
+          if (fromH) { fromH.setAttribute("cx", geom.p1.x); fromH.setAttribute("cy", geom.p1.y); }
+          if (toH) { toH.setAttribute("cx", geom.p2.x); toH.setAttribute("cy", geom.p2.y); }
         }
 
         function onUp() {
@@ -4769,59 +5056,98 @@
           }
         });
 
-        // 4. Render Relationship Arrows (Floating, Draggable Labels with Leader Lines)
+        // 4. Render Relationship Arrows (4-Side Port Pinning + Floating, Draggable Labels)
         relGroup.innerHTML = "";
         (sheet.relationships || []).forEach(rel => {
           const fromNode = sheet.nodes.find(n => n.id === rel.fromId);
           const toNode = sheet.nodes.find(n => n.id === rel.toId);
           if (!fromNode || !toNode || !isVisible.has(fromNode.id) || !isVisible.has(toNode.id)) return;
 
-          const x1 = fromNode.x;
-          const y1 = fromNode.y;
-          const x2 = toNode.x;
-          const y2 = toNode.y;
+          const fromDim = nodeDimensions.get(fromNode.id) || { w: 180, h: 54 };
+          const toDim = nodeDimensions.get(toNode.id) || { w: 180, h: 54 };
 
-          const midX = (x1 + x2) / 2;
-          const midY = (y1 + y2) / 2;
-          const dx = x2 - x1;
-          const dy = y2 - y1;
-          const dist = Math.hypot(dx, dy) || 1;
-          const curvature = 55;
-          const baseCx = midX - (dy / dist) * curvature;
-          const baseCy = midY + (dx / dist) * curvature;
+          const geom = computeRelationshipGeometry(fromNode, fromDim, toNode, toDim, rel);
+          const { p1, p2, x1, y1, x2, y2, midX, midY, baseCx, baseCy, apexX, apexY, pathD } = geom;
 
-          const curOffX = rel.ctrlOffsetX !== undefined ? rel.ctrlOffsetX : (rel.labelOffsetX || 0);
-          const curOffY = rel.ctrlOffsetY !== undefined ? rel.ctrlOffsetY : (rel.labelOffsetY || 0);
+          const isRelSelected = state.selectedRelId === rel.id;
+          const isSpotlightRel = state.isPresenting && (rel.fromId === state.selectedNodeId || rel.toId === state.selectedNodeId);
 
-          const cx = baseCx + curOffX;
-          const cy = baseCy + curOffY;
-
-          const pathD = `M ${x1} ${y1} Q ${cx} ${cy} ${x2} ${y2}`;
+          const relHit = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          relHit.setAttribute("id", `rel-hit-${rel.id}`);
+          relHit.setAttribute("class", "relationship-hit-path");
+          relHit.setAttribute("d", pathD);
+          relHit.setAttribute("title", "Drag near start or end to pin relationship to Top, Bottom, Left, or Right (Double-click to auto-reset)");
 
           const relPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          relPath.setAttribute("id", `rel-path-${rel.id}`);
           relPath.setAttribute("d", pathD);
-
-          const isSpotlightRel = state.isPresenting && (rel.fromId === state.selectedNodeId || rel.toId === state.selectedNodeId);
-          relPath.setAttribute("class", `relationship-path ${state.selectedRelId === rel.id ? "is-selected" : ""} ${isSpotlightRel ? "is-spotlight" : ""}`);
+          relPath.setAttribute("class", `relationship-path ${isRelSelected ? "is-selected" : ""} ${isSpotlightRel ? "is-spotlight" : ""}`);
           relPath.setAttribute("marker-end", "url(#arrowhead)");
 
-          relPath.addEventListener("click", (e) => {
-            e.stopPropagation();
-            state.selectedRelId = rel.id;
-            state.selectedNodeId = null;
-            state.selectedNodeIds.clear();
-            render();
-          });
-
+          relGroup.appendChild(relHit);
           relGroup.appendChild(relPath);
 
-          // Curve Apex calculation for label positioning:
-          // For quadratic Bezier curve B(t) with t = 0.5: B(0.5) = 0.5*mid + 0.5*C
-          const apexX = 0.5 * midX + 0.5 * cx;
-          const apexY = 0.5 * midY + 0.5 * cy;
+          if (!state.isPresenting) {
+            const showRelHandles = isRelSelected || state.selectedNodeId === fromNode.id || state.selectedNodeId === toNode.id;
+
+            const relFromHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            relFromHandle.setAttribute("id", `rel-from-handle-${rel.id}`);
+            relFromHandle.setAttribute("class", `connector-port-handle rel-port-handle from-handle ${showRelHandles ? "is-visible" : ""}`);
+            relFromHandle.setAttribute("cx", p1.x);
+            relFromHandle.setAttribute("cy", p1.y);
+            relFromHandle.setAttribute("r", "6");
+            relFromHandle.setAttribute("title", "Drag to pin relationship start port (Top, Right, Bottom, Left)");
+
+            const relToHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            relToHandle.setAttribute("id", `rel-to-handle-${rel.id}`);
+            relToHandle.setAttribute("class", `connector-port-handle rel-port-handle to-handle ${showRelHandles ? "is-visible" : ""}`);
+            relToHandle.setAttribute("cx", p2.x);
+            relToHandle.setAttribute("cy", p2.y);
+            relToHandle.setAttribute("r", "6");
+            relToHandle.setAttribute("title", "Drag to pin relationship end port (Top, Right, Bottom, Left)");
+
+            const showRelHover = () => {
+              relPath.classList.add("is-selected");
+              relFromHandle.classList.add("is-visible");
+              relToHandle.classList.add("is-visible");
+            };
+            const hideRelHover = () => {
+              if (state.selectedRelId !== rel.id) {
+                relPath.classList.remove("is-selected");
+                if (!showRelHandles) {
+                  relFromHandle.classList.remove("is-visible");
+                  relToHandle.classList.remove("is-visible");
+                }
+              }
+            };
+
+            const resetRelPorts = (e) => {
+              e.stopPropagation();
+              rel.fromPort = null;
+              rel.toPort = null;
+              pushHistory();
+              render();
+              showToast("Relationship ports reset to Auto");
+            };
+
+            [relHit, relPath, relFromHandle, relToHandle].forEach(el => {
+              el.addEventListener("mouseenter", showRelHover);
+              el.addEventListener("mouseleave", hideRelHover);
+              el.addEventListener("dblclick", resetRelPorts);
+            });
+
+            relHit.addEventListener("mousedown", (e) => initRelationshipPortDrag(e, rel, fromNode, toNode, "auto"));
+            relPath.addEventListener("mousedown", (e) => initRelationshipPortDrag(e, rel, fromNode, toNode, "auto"));
+            relFromHandle.addEventListener("mousedown", (e) => initRelationshipPortDrag(e, rel, fromNode, toNode, "from"));
+            relToHandle.addEventListener("mousedown", (e) => initRelationshipPortDrag(e, rel, fromNode, toNode, "to"));
+
+            connectorHandlesGroup.appendChild(relFromHandle);
+            connectorHandlesGroup.appendChild(relToHandle);
+          }
 
           // Arrow Label Pill Container placed directly at curve apex
           const labelGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
+          labelGroup.setAttribute("id", `rel-label-${rel.id}`);
           labelGroup.setAttribute("class", `rel-label-container ${isSpotlightRel ? "is-spotlight" : ""}`);
           labelGroup.setAttribute("transform", `translate(${apexX}, ${apexY})`);
 
@@ -4848,6 +5174,11 @@
             if (e.button !== 0) return;
             e.stopPropagation();
 
+            state.selectedRelId = rel.id;
+            state.selectedNodeId = null;
+            state.selectedNodeIds.clear();
+            state.selectedBoundaryId = null;
+
             let startX = e.clientX;
             let startY = e.clientY;
             let origOffX = rel.ctrlOffsetX !== undefined ? rel.ctrlOffsetX : (rel.labelOffsetX || 0);
@@ -4873,7 +5204,9 @@
               const curApexY = 0.5 * midY + 0.5 * curCy;
 
               // Dynamically redraw the relationship curve in real-time as the label is dragged!
-              relPath.setAttribute("d", `M ${x1} ${y1} Q ${curCx} ${curCy} ${x2} ${y2}`);
+              const newD = `M ${x1} ${y1} Q ${curCx} ${curCy} ${x2} ${y2}`;
+              relPath.setAttribute("d", newD);
+              relHit.setAttribute("d", newD);
               labelGroup.setAttribute("transform", `translate(${curApexX}, ${curApexY})`);
             }
 
@@ -5596,11 +5929,98 @@
         const currentEl = nodeEl;
         let dropAction = null;
 
+        function findDropTargetNode(clientX, clientY, wx, wy) {
+          // 1. Check all elements in the Z-stack under the cursor (immune to dragged card or SVG overlays)
+          const stack = document.elementsFromPoint ? document.elementsFromPoint(clientX, clientY) : [document.elementFromPoint(clientX, clientY)];
+          for (let i = 0; i < stack.length; i++) {
+            const el = stack[i];
+            if (!el) continue;
+            const candEl = el.closest && el.closest(".mind-node");
+            if (candEl && candEl !== currentEl) {
+              const rect = candEl.getBoundingClientRect();
+              // Ensure the pointer is within or very close to the actual card box (not far out on the ::after hover bridge)
+              if (
+                clientX >= rect.left - 10 &&
+                clientX <= rect.right + 10 &&
+                clientY >= rect.top - 12 &&
+                clientY <= rect.bottom + 12
+              ) {
+                const candId = candEl.id.replace("node-", "");
+                const candNode = sheet.nodes.find(n => n.id === candId);
+                if (candNode && candNode.id !== node.id && !isAncestor(node.id, candNode.id)) {
+                  return { targetNode: candNode, targetEl: candEl };
+                }
+              }
+            }
+          }
+
+          // 2. World-space bounding box check across all visible candidate nodes
+          let bestBoxCand = null;
+          let bestBoxDist = Infinity;
+          for (let i = 0; i < sheet.nodes.length; i++) {
+            const cand = sheet.nodes[i];
+            if (cand.id === node.id || isAncestor(node.id, cand.id)) continue;
+            const candEl = document.getElementById(`node-${cand.id}`);
+            if (!candEl || candEl.style.display === "none") continue;
+            const cw = candEl.offsetWidth || 180;
+            const ch = candEl.offsetHeight || 50;
+            if (
+              Math.abs(wx - cand.x) <= cw / 2 + 12 &&
+              Math.abs(wy - cand.y) <= ch / 2 + 14
+            ) {
+              const d = Math.hypot(wx - cand.x, wy - cand.y);
+              if (d < bestBoxDist) {
+                bestBoxDist = d;
+                bestBoxCand = { targetNode: cand, targetEl: candEl };
+              }
+            }
+          }
+          if (bestBoxCand) return bestBoxCand;
+
+          // 3. Sibling column / row corridor check so dragging straight up/down into a gap or narrower sibling immediately triggers reorder
+          if (node.parentId !== null) {
+            const isHorizontal = sheet.layout === "tree-down";
+            let bestSibling = null;
+            let bestSiblingDist = Infinity;
+
+            for (let i = 0; i < sheet.nodes.length; i++) {
+              const cand = sheet.nodes[i];
+              if (cand.id === node.id || cand.parentId !== node.parentId) continue;
+              if (sheet.layout === "radial" && cand.side && node.side && cand.side !== node.side) continue;
+              const candEl = document.getElementById(`node-${cand.id}`);
+              if (!candEl || candEl.style.display === "none") continue;
+              const cw = candEl.offsetWidth || 180;
+              const ch = candEl.offsetHeight || 50;
+
+              if (isHorizontal) {
+                if (Math.abs(wy - cand.y) <= Math.max(85, ch * 1.15) && Math.abs(wx - cand.x) <= Math.max(120, cw * 0.9)) {
+                  const d = Math.abs(wx - cand.x);
+                  if (d < bestSiblingDist) {
+                    bestSiblingDist = d;
+                    bestSibling = { targetNode: cand, targetEl: candEl };
+                  }
+                }
+              } else {
+                if (Math.abs(wx - cand.x) <= Math.max(160, cw * 0.95) && Math.abs(wy - cand.y) <= Math.max(56, ch * 1.05)) {
+                  const d = Math.abs(wy - cand.y);
+                  if (d < bestSiblingDist) {
+                    bestSiblingDist = d;
+                    bestSibling = { targetNode: cand, targetEl: candEl };
+                  }
+                }
+              }
+            }
+            if (bestSibling) return bestSibling;
+          }
+
+          return null;
+        }
+
         function onMouseMove(e) {
           const dx = (e.clientX - startX) / state.camera.zoom;
           const dy = (e.clientY - startY) / state.camera.zoom;
 
-          if (!hasMoved && Math.hypot(dx, dy) > 4) {
+          if (!hasMoved && Math.hypot(e.clientX - startX, e.clientY - startY) > 2) {
             hasMoved = true;
             currentEl.classList.add("is-dragging");
             currentEl.style.zIndex = "1000";
@@ -5625,36 +6045,36 @@
           // Fully graphical floating card following cursor
           currentEl.style.transform = `translate(${dx}px, ${dy}px) scale(1.04)`;
 
-          // Detect target node underneath cursor
-          const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
-          const targetEl = elemBelow?.closest(".mind-node");
+          const tempX = origNodeX + dx;
+          const tempY = origNodeY + dy;
+          updateRelationshipsLive(new Map([[node.id, { ...node, x: tempX, y: tempY }]]));
+
+          const wx = (e.clientX - state.camera.x) / state.camera.zoom;
+          const wy = (e.clientY - state.camera.y) / state.camera.zoom;
 
           document.querySelectorAll(".mind-node").forEach(el => el.classList.remove("is-drop-target"));
           hideDragIndicator();
           dropAction = null;
 
-          if (targetEl && targetEl !== currentEl) {
-            const targetId = targetEl.id.replace("node-", "");
-            const targetNode = sheet.nodes.find(n => n.id === targetId);
+          const hit = findDropTargetNode(e.clientX, e.clientY, wx, wy);
+          if (hit) {
+            const { targetNode, targetEl } = hit;
+            const isSibling = (targetNode.parentId === node.parentId) && (node.parentId !== null);
+            const rect = targetEl.getBoundingClientRect();
 
-            if (targetNode && !isAncestor(node.id, targetId) && targetId !== node.id) {
-              const isSibling = (targetNode.parentId === node.parentId) && (node.parentId !== null);
-              const rect = targetEl.getBoundingClientRect();
+            if (isSibling) {
+              // Reordering among siblings!
+              const isHorizontal = sheet.layout === "tree-down";
+              const insertBefore = isHorizontal
+                ? (e.clientX < rect.left + rect.width / 2)
+                : (e.clientY < rect.top + rect.height / 2);
 
-              if (isSibling) {
-                // Reordering among siblings!
-                const isHorizontal = sheet.layout === "tree-down";
-                const insertBefore = isHorizontal 
-                  ? (e.clientX < rect.left + rect.width / 2)
-                  : (e.clientY < rect.top + rect.height / 2);
-
-                dropAction = { type: "reorder", targetNode, insertBefore };
-                showDragIndicator(targetNode, insertBefore, isHorizontal);
-              } else {
-                // Attaching to a new parent topic!
-                targetEl.classList.add("is-drop-target");
-                dropAction = { type: "reparent", targetNode };
-              }
+              dropAction = { type: "reorder", targetNode, insertBefore };
+              showDragIndicator(targetNode, insertBefore, isHorizontal);
+            } else {
+              // Attaching to a new parent topic!
+              targetEl.classList.add("is-drop-target");
+              dropAction = { type: "reparent", targetNode };
             }
           }
         }
@@ -6608,14 +7028,20 @@
           id: `rel-${Date.now()}`,
           fromId: state.connectSourceId,
           toId: targetNodeId,
+          fromPort: null,
+          toPort: null,
           label: label ? label.trim() : ""
         };
 
         if (!sheet.relationships) sheet.relationships = [];
         sheet.relationships.push(newRel);
         state.connectSourceId = null;
+        state.selectedRelId = newRel.id;
+        state.selectedNodeId = null;
+        state.selectedNodeIds.clear();
+        state.selectedBoundaryId = null;
 
-        showToast("Arrow Connected");
+        showToast("Arrow Connected — Drag endpoints or use Start/End buttons to pin sides");
         pushHistory();
         render();
       }
@@ -7584,9 +8010,47 @@
 
         const shapeGroupEl = document.getElementById("inspector-shape-group");
         const shapeDividerEl = document.getElementById("inspector-shape-divider");
+        const swatchListEl = document.getElementById("inspector-swatch-list");
+        const relPortsGroupEl = document.getElementById("inspector-rel-ports-group");
 
         const customColorSwatch = document.getElementById("inspector-custom-color-swatch");
         const customColorInput = document.getElementById("inspector-custom-color-input");
+
+        if (state.selectedRelId) {
+          const rel = (sheet.relationships || []).find(r => r.id === state.selectedRelId);
+          if (!rel) {
+            inspectorEl.classList.remove("is-visible");
+            return;
+          }
+          inspectorEl.classList.add("is-visible");
+          inspectorEl.classList.remove("is-boundary-mode");
+
+          if (swatchListEl) swatchListEl.style.display = "none";
+          if (shapeGroupEl) shapeGroupEl.style.display = "none";
+          if (shapeDividerEl) shapeDividerEl.style.display = "none";
+          if (relPortsGroupEl) relPortsGroupEl.style.display = "flex";
+
+          const curFrom = rel.fromPort && PORT_SIDES.includes(rel.fromPort) ? rel.fromPort : "auto";
+          const curTo = rel.toPort && PORT_SIDES.includes(rel.toPort) ? rel.toPort : "auto";
+          document.querySelectorAll(".inspector-rel-port-btn").forEach(btn => {
+            const end = btn.dataset.relEnd;
+            const p = btn.dataset.port;
+            btn.classList.toggle("is-active", (end === "from" && p === curFrom) || (end === "to" && p === curTo));
+          });
+
+          const bndSettingsBtn = document.getElementById("inspector-btn-bnd-settings");
+          if (bndSettingsBtn) bndSettingsBtn.style.display = "none";
+          document.getElementById("inspector-btn-boundary").style.display = "none";
+          const imgBtn = document.getElementById("inspector-btn-image");
+          if (imgBtn) imgBtn.style.display = "none";
+          document.getElementById("inspector-btn-edit-details").style.display = "none";
+          document.getElementById("inspector-btn-toggle-fold").style.display = "none";
+          document.getElementById("inspector-btn-duplicate").style.display = "none";
+          return;
+        }
+
+        if (swatchListEl) swatchListEl.style.display = "flex";
+        if (relPortsGroupEl) relPortsGroupEl.style.display = "none";
 
         if (state.selectedBoundaryId) {
           const bnd = (sheet.boundaries || []).find(b => b.id === state.selectedBoundaryId);
@@ -7670,6 +8134,38 @@
         const foldBtn = document.getElementById("inspector-btn-toggle-fold");
         foldBtn.querySelector("span").textContent = selected.collapsed ? "Unfold" : "Fold";
       }
+
+      document.querySelectorAll(".inspector-rel-port-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          if (!state.selectedRelId) return;
+          const sheet = getActiveSheet();
+          const rel = (sheet.relationships || []).find(r => r.id === state.selectedRelId);
+          if (!rel) return;
+          const end = btn.dataset.relEnd;
+          const portVal = btn.dataset.port === "auto" ? null : btn.dataset.port;
+          if (end === "from") {
+            rel.fromPort = portVal;
+          } else {
+            rel.toPort = portVal;
+          }
+          pushHistory();
+          render();
+          showToast(`Relationship ${end === "from" ? "Start" : "End"} pinned to ${(portVal || "auto").toUpperCase()}`);
+        });
+      });
+
+      document.getElementById("inspector-btn-rel-label")?.addEventListener("click", () => {
+        if (!state.selectedRelId) return;
+        const sheet = getActiveSheet();
+        const rel = (sheet.relationships || []).find(r => r.id === state.selectedRelId);
+        if (!rel) return;
+        const newLabel = prompt("Edit Arrow Label (or leave blank):", rel.label || "");
+        if (newLabel !== null) {
+          rel.label = newLabel.trim();
+          pushHistory();
+          render();
+        }
+      });
 
       function applyColorToSelection(newColor, commitHistory = true) {
         if (!newColor) return;
