@@ -53,10 +53,10 @@ Then visit `http://localhost:3000`.
   - Delete Topic (`Del`)
 - Right-click canvas to create topics, boundaries, or fit view.
 
-### 6. 🔘 Centered Fold/Unfold Button with Auto-Hide
-- The collapse/maximize circular button now uses **crisp, mathematically centered vector SVGs** for `+` and `−`.
-- **Auto-hides** when the branch is expanded, only appearing when you hover over the node.
-- If a branch is collapsed, the button stays visible with a distinct glowing accent indicator so you always know hidden subtopics are stored there.
+### 6. 🔘 Centered Fold/Unfold & Add-Branch Buttons with Seamless Hover Bridge
+- The collapse/maximize circular button uses **crisp, mathematically centered vector SVGs** for `+` and `−`, paired with an adjacent quick **Add Subtopic (`+`)** button.
+- An invisible hover bridge and hit cushions keep both the fold (`−`/`+`) and add-branch (`+`) buttons smoothly reachable without collapsing when moving your cursor outward from the card.
+- If a branch is collapsed, the fold button stays visible with a distinct glowing accent indicator so you always know hidden subtopics are stored there.
 
 ### 7. 🎬 Presenter Mode Relationship Isolation
 - When Presenter Spotlight Mode (`P`) is active, background relationship lines and label pills are dimmed out to 5% opacity.
@@ -79,6 +79,21 @@ Then visit `http://localhost:3000`.
 
 ### 11. ✨ Crisp High-DPI Vector Rendering at All Zoom Levels
 - Eliminated Chromium GPU compositor texture freezing (`will-change` / `backdrop-filter`) and fractional `0.5px` sub-pixel card offsets so all cards, typography, borders, and SVG curves remain razor-sharp up to `350%` zoom without needing to click elements after zooming.
+
+### 12. 🎨 6 Bubble / Topic Styles (Including Plain Text, Outline & Bracket)
+- Switch any selected topic(s) directly from the floating inspector bar or Topic Details modal between 6 distinct visual styles:
+  - **Card** (`card`) — elevated glassmorphic card with color accent bar
+  - **Pill** (`pill`) — rounded capsule bubble
+  - **Plain** (`plain`) — floating text by itself with no box, border, shadow, or accent bar
+  - **Line** (`underline`) — floating text with a crisp colored bottom underline
+  - **Outline** (`outline`) — transparent wireframe box with a colored outline
+  - **Bracket** (`bracket`) — minimal callout with a thick colored left bracket border
+- All 6 styles render accurately on the canvas and in 4K PNG / Vector SVG exports.
+
+### 13. ↔️ Dynamic Horizontal Card Sizing, Tight Auto-Fit & Double-Click Reset
+- **Tight Default Auto-Fit**: Cards automatically fit tightly around their text (`width: max-content`) with zero dead space to the right, and the layout engine solves spacing using real measured DOM dimensions.
+- **Drag-to-Resize Handles**: Drag the left or right edge handles on any card to dynamically widen a multi-line title onto a single line or narrow it to wrap onto multiple lines.
+- **Double-Click Reset**: Double-click the left or right edge/handle of any resized card (or click **↺ Reset Width** in the Topic Details modal) to snap it back to its default auto-fit width.
 
 ---
 
