@@ -240,7 +240,9 @@
       position: absolute;
       border-radius: 14px;
       padding: 10px 18px;
-      min-width: 130px;
+      min-width: 72px;
+      width: max-content;
+      max-width: 310px;
       background: var(--bg-surface-elevated);
       color: var(--text-main);
       box-shadow: var(--shadow-node);
@@ -274,7 +276,8 @@
     .mind-node.is-root {
       padding: 16px 26px;
       border-radius: 18px;
-      min-width: 200px;
+      min-width: 160px;
+      max-width: 380px;
       font-weight: 700;
       font-size: 1.25rem;
       background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(168, 85, 247, 0.12)), var(--bg-surface-elevated);
@@ -620,6 +623,61 @@
     .node-add-branch-btn.bottom-side.has-fold { bottom: -33px; }
     .mind-node:hover .node-add-branch-btn.bottom-side { transform: translateX(-50%) scale(1); }
     .node-add-branch-btn.bottom-side:hover { transform: translateX(-50%) scale(1.15) !important; }
+
+    /* Dynamic Horizontal Card Resize Handles (Left & Right Edges) */
+    .node-resize-handle {
+      position: absolute;
+      top: 4px;
+      bottom: 4px;
+      width: 10px;
+      cursor: ew-resize;
+      z-index: 8;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+    }
+
+    .node-resize-handle.left-handle {
+      left: -5px;
+    }
+
+    .node-resize-handle.right-handle {
+      right: -5px;
+    }
+
+    .node-resize-handle::after {
+      content: "";
+      width: 3px;
+      height: 16px;
+      border-radius: 999px;
+      background: var(--border-strong);
+      transition: background 0.15s ease, height 0.15s ease, box-shadow 0.15s ease;
+    }
+
+    .mind-node:hover .node-resize-handle,
+    .mind-node.is-selected .node-resize-handle {
+      opacity: 0.7;
+    }
+
+    .node-resize-handle:hover,
+    .mind-node.is-resizing .node-resize-handle {
+      opacity: 1 !important;
+    }
+
+    .node-resize-handle:hover::after,
+    .mind-node.is-resizing .node-resize-handle::after {
+      height: 24px;
+      background: var(--accent);
+      box-shadow: 0 0 8px var(--accent-glow);
+    }
+
+    body.is-presenting .node-resize-handle,
+    body.is-clean-mode .node-resize-handle {
+      display: none !important;
+      pointer-events: none !important;
+    }
 
     /* Dragging ghost & reparenting */
     .mind-node.is-dragging {
@@ -2239,7 +2297,10 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Bubble / Card Style</label>
+          <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:6px;">
+            <label class="form-label" style="margin-bottom:0;">Bubble / Card Style</label>
+            <button class="ui-btn" id="btn-reset-node-width" type="button" title="Reset card horizontal width to default auto-fit (or double-click card edge)" style="font-size:0.72rem; padding:3px 8px; height:auto; border:1px solid var(--border-strong);">↺ Reset Width</button>
+          </div>
           <div style="display:flex; gap:8px; flex-wrap:wrap;" id="details-shape-btn-group">
             <button class="ui-btn" id="btn-shape-card" data-shape="card" style="border:1px solid var(--border-strong);">Card</button>
             <button class="ui-btn" id="btn-shape-pill" data-shape="pill" style="border:1px solid var(--border-strong);">Pill</button>
@@ -2764,7 +2825,7 @@
       // =========================================================================
       // AUTO SPACING & COLLISION-FREE TREE LAYOUT ENGINE
       // =========================================================================
-      function computeLayout() {
+      function computeLayout(overrideDims = null) {
         const sheet = getActiveSheet();
         const root = sheet.nodes.find(n => n.id === "root") || sheet.nodes[0];
         if (!root) return;
@@ -2793,9 +2854,13 @@
         const nodeDimensions = new Map();
         sheet.nodes.forEach(n => {
           const isRoot = n.id === root.id;
+          if (overrideDims && overrideDims.has(n.id)) {
+            nodeDimensions.set(n.id, overrideDims.get(n.id));
+            return;
+          }
           const existingEl = document.getElementById(`node-${n.id}`);
           let w, h;
-          if (existingEl && existingEl.offsetHeight > 0) {
+          if (existingEl && existingEl.offsetHeight > 0 && existingEl.offsetWidth > 0) {
             w = existingEl.offsetWidth;
             h = existingEl.offsetHeight;
           } else {
@@ -2804,12 +2869,15 @@
             const hasDesc = !!n.desc;
             const hasEmoji = !!n.emoji;
             const hasTags = n.tags && n.tags.length > 0;
-            
-            w = isRoot ? 230 : Math.max(180, Math.min(320, Math.max(textLen * 9.5, descLen * 6.5) + (hasEmoji ? 65 : 45)));
-            
-            h = isRoot ? 64 : 48;
+
+            const autoW = isRoot
+              ? Math.max(160, Math.min(380, textLen * 11 + (hasEmoji ? 70 : 52)))
+              : Math.max(84, Math.min(310, Math.max(textLen * 9, descLen * 6.5) + (hasEmoji ? 60 : 40)));
+            w = (n.customWidth && Number.isFinite(n.customWidth)) ? Math.round(n.customWidth) : autoW;
+
+            h = isRoot ? 64 : 44;
             if (hasDesc) {
-              const descLines = Math.ceil((descLen * 8) / (w - 36)) || 1;
+              const descLines = Math.ceil((descLen * 8) / Math.max(50, w - 36)) || 1;
               h += 12 + descLines * 18;
             }
             if (hasTags) h += 28;
@@ -3278,6 +3346,8 @@
 
         // 1. Render DOM Nodes first so live offsetWidth & offsetHeight are 100% exact for all 4 ports!
         nodesLayer.innerHTML = "";
+        const domNodesMap = new Map();
+
         sheet.nodes.forEach(node => {
           if (!isVisible.has(node.id)) return;
 
@@ -3290,10 +3360,14 @@
           nodeEl.id = `node-${node.id}`;
           nodeEl.style.setProperty("--node-color", node.color || "#6366f1");
 
-          // Initial placement before DOM measurement
-          nodeEl.style.left = `${Math.round(node.x - dims.w / 2)}px`;
-          nodeEl.style.top = `${Math.round(node.y - dims.h / 2)}px`;
-          nodeEl.style.width = `${dims.w}px`;
+          if (node.customWidth && Number.isFinite(node.customWidth)) {
+            nodeEl.style.width = `${Math.round(node.customWidth)}px`;
+            nodeEl.style.maxWidth = "none";
+            nodeEl.style.minWidth = "60px";
+          } else {
+            nodeEl.style.width = "max-content";
+            nodeEl.style.maxWidth = isRoot ? "380px" : "310px";
+          }
 
           if (state.isPresenting) {
             if (isSelected) {
@@ -3317,6 +3391,27 @@
               </div>
             ` : ""}
           `;
+
+          // Left & Right Horizontal Resize Handles (Drag to resize width, Double-click to reset to default)
+          if (!state.isPresenting) {
+            ["left", "right"].forEach(edge => {
+              const resizeHandle = document.createElement("div");
+              resizeHandle.className = `node-resize-handle ${edge}-handle`;
+              resizeHandle.title = "Drag to resize width • Double-click to reset default size";
+              resizeHandle.addEventListener("mousedown", (e) => {
+                if (e.button !== 0) return;
+                e.stopPropagation();
+                e.preventDefault();
+                initNodeResize(e, node, nodeEl, edge === "right" ? 1 : -1);
+              });
+              resizeHandle.addEventListener("dblclick", (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                resetNodeWidth(node.id);
+              });
+              nodeEl.appendChild(resizeHandle);
+            });
+          }
 
           // Fold/Unfold Button - Centered SVG & Hover-Reveal
           const hasChildren = sheet.nodes.some(n => n.parentId === node.id);
@@ -3370,15 +3465,27 @@
 
           setupNodeInteractions(nodeEl, node);
           nodesLayer.appendChild(nodeEl);
+          domNodesMap.set(node.id, nodeEl);
 
-          // Synchronize exact live DOM measurements so top/bottom/left/right ports align to the pixel
-          // and position at integer pixel coordinates without fractional translateY(-50%) sub-pixel blur
           const actualW = nodeEl.offsetWidth || dims.w;
           const actualH = nodeEl.offsetHeight || dims.h;
           if (actualW > 0 && actualH > 0) {
             nodeDimensions.set(node.id, { w: actualW, h: actualH });
-            nodeEl.style.left = `${Math.round(node.x - actualW / 2)}px`;
-            nodeEl.style.top = `${Math.round(node.y - actualH / 2)}px`;
+          }
+        });
+
+        // Re-solve structured layout coordinates using 100% exact measured DOM widths & heights
+        if (sheet.layout !== "freeform") {
+          computeLayout(nodeDimensions);
+        }
+
+        // Position every DOM card at integer pixel coordinates using exact measured dimensions
+        domNodesMap.forEach((nodeEl, nodeId) => {
+          const node = sheet.nodes.find(n => n.id === nodeId);
+          const d = nodeDimensions.get(nodeId) || { w: 180, h: 50 };
+          if (node) {
+            nodeEl.style.left = `${Math.round(node.x - d.w / 2)}px`;
+            nodeEl.style.top = `${Math.round(node.y - d.h / 2)}px`;
           }
         });
 
@@ -3769,7 +3876,17 @@
       function setupNodeInteractions(nodeEl, node) {
         nodeEl.addEventListener("mousedown", (e) => {
           if (e.button === 2) return; // Right-click handled by contextmenu
-          if (e.target.isContentEditable || e.target.closest(".node-fold-btn") || e.target.closest(".node-add-subtext-btn")) return;
+          if (
+            e.target.isContentEditable ||
+            e.target.closest(".node-fold-btn") ||
+            e.target.closest(".node-add-branch-btn") ||
+            e.target.closest(".node-resize-handle") ||
+            e.target.closest(".node-add-subtext-btn")
+          ) return;
+          // Ignore mousedown on the invisible ::after hover bridge outside the card box
+          if (e.target === nodeEl && (e.offsetX < -2 || e.offsetX > nodeEl.offsetWidth + 2 || e.offsetY < -2 || e.offsetY > nodeEl.offsetHeight + 2)) {
+            return;
+          }
           e.stopPropagation();
           closeContextMenu();
 
@@ -3833,12 +3950,17 @@
         nodeEl.addEventListener("dblclick", (e) => {
           if (state.isPresenting) return;
           e.stopPropagation();
-          if (e.target.classList.contains("node-desc") || e.target.closest(".node-desc")) {
+          if (e.target.closest(".node-resize-handle")) {
+            resetNodeWidth(node.id);
+          } else if (e.target.classList.contains("node-desc") || e.target.closest(".node-desc")) {
             startEditingSubtext(node.id);
           } else if (e.target.classList.contains("node-add-subtext-btn") || e.target.closest(".node-add-subtext-btn")) {
             startEditingSubtext(node.id);
           } else if (e.target.classList.contains("node-title") || e.target.closest(".node-title")) {
             startEditingNode(node.id);
+          } else if (node.customWidth && (e.offsetX < 18 || e.offsetX > nodeEl.offsetWidth - 18)) {
+            // Double-clicking near the left or right edge of a resized card resets its width to default!
+            resetNodeWidth(node.id);
           } else {
             // Double-clicking left/right borders, padding, accent bar, or badge opens Details Modal!
             openDetailsModal(node.id);
@@ -4164,6 +4286,90 @@
 
         window.addEventListener("mousemove", onMouseMove);
         window.addEventListener("mouseup", onMouseUp);
+      }
+
+      function resetNodeWidth(nodeId) {
+        const sheet = getActiveSheet();
+        const target = sheet.nodes.find(n => n.id === nodeId);
+        if (!target) return;
+        delete target.customWidth;
+        pushHistory();
+        render();
+        showToast("Card Width Reset to Default");
+      }
+
+      function initNodeResize(startEvent, node, nodeEl, side) {
+        const sheet = getActiveSheet();
+        const startX = startEvent.clientX;
+        const startW = Math.round(nodeEl.offsetWidth || 180);
+        const origNodeX = node.x;
+        let hasResized = false;
+
+        if (!state.selectedNodeIds.has(node.id)) {
+          state.selectedNodeIds.clear();
+          state.selectedNodeIds.add(node.id);
+          state.selectedNodeId = node.id;
+          document.querySelectorAll(".mind-node").forEach(el => {
+            const nid = el.id.replace("node-", "");
+            el.classList.toggle("is-selected", state.selectedNodeIds.has(nid));
+          });
+          updateInspectorBar();
+        }
+
+        nodeEl.classList.add("is-resizing");
+
+        function onResizeMove(e) {
+          const dx = (e.clientX - startX) / state.camera.zoom;
+          if (!hasResized && Math.abs(dx) > 2) {
+            hasResized = true;
+          }
+          if (!hasResized) return;
+
+          const minW = node.id === "root" ? 130 : 68;
+          const newW = Math.max(minW, Math.min(900, Math.round(startW + dx * side)));
+          node.customWidth = newW;
+          nodeEl.style.width = `${newW}px`;
+          nodeEl.style.maxWidth = "none";
+
+          const curW = Math.round(nodeEl.offsetWidth || newW);
+          const curH = Math.round(nodeEl.offsetHeight || 54);
+          nodeDimensions.set(node.id, { w: curW, h: curH });
+
+          if (sheet.layout === "freeform") {
+            // Keep opposite edge anchored while stretching the dragged edge
+            node.x = origNodeX + ((curW - startW) / 2) * side;
+            nodeEl.style.left = `${Math.round(node.x - curW / 2)}px`;
+            nodeEl.style.top = `${Math.round(node.y - curH / 2)}px`;
+          } else {
+            computeLayout(nodeDimensions);
+            sheet.nodes.forEach(n => {
+              const el = document.getElementById(`node-${n.id}`);
+              const dim = nodeDimensions.get(n.id) || { w: 180, h: 54 };
+              if (el) {
+                el.style.left = `${Math.round(n.x - dim.w / 2)}px`;
+                el.style.top = `${Math.round(n.y - dim.h / 2)}px`;
+              }
+            });
+          }
+
+          updateFreeformConnectorsLive();
+          updateMinimap();
+        }
+
+        function onResizeUp() {
+          window.removeEventListener("mousemove", onResizeMove);
+          window.removeEventListener("mouseup", onResizeUp);
+          nodeEl.classList.remove("is-resizing");
+
+          if (hasResized) {
+            pushHistory();
+            render();
+            showToast(`Card Width: ${Math.round(node.customWidth)}px (Double-click edge to reset)`);
+          }
+        }
+
+        window.addEventListener("mousemove", onResizeMove);
+        window.addEventListener("mouseup", onResizeUp);
       }
 
       // =========================================================================
@@ -5218,6 +5424,19 @@
           showToast(`Style: ${SHAPE_LABELS[shapeName] || shapeName}`);
         }
       }
+
+      document.getElementById("btn-reset-node-width")?.addEventListener("click", () => {
+        const sheet = getActiveSheet();
+        const targets = state.selectedNodeIds.size > 0
+          ? sheet.nodes.filter(n => state.selectedNodeIds.has(n.id))
+          : sheet.nodes.filter(n => n.id === state.selectedNodeId);
+        if (targets.length > 0) {
+          targets.forEach(n => { delete n.customWidth; });
+          pushHistory();
+          render();
+          showToast("Card Width Reset to Default");
+        }
+      });
 
       // =========================================================================
       // SPOTLIGHT SEARCH (Ctrl+F)
