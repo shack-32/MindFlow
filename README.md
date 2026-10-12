@@ -68,6 +68,18 @@ Then visit `http://localhost:3000`.
 - **Add subtext**: Hover or select any node without subtext to see the subtle `+ Add subtext` button, or double-click to type immediately!
 - Press `Enter` to save, `Escape` to cancel. Empty subtext cleans up automatically.
 
+### 9. 🧭 Real-Time Minimap Click-and-Drag Panning
+- Hold and drag anywhere inside the bottom-right **Minimap Radar** to pan the camera smoothly across the canvas in real time.
+- Upgraded `#minimap-canvas` with High-DPI (`devicePixelRatio`) Retina rendering and expanded overview bounds.
+
+### 10. 🔌 Smart 4-Side Connector Pinning & Draggable Endpoints
+- **Automatic Nearest-Side Pinning**: In Freeform Canvas, branch connectors automatically pin to the most intuitive side (`top`, `right`, `bottom`, or `left`) based on relative card positions (e.g. a subtopic placed above its parent pins from the parent's `top` edge to the subtopic's `bottom` edge).
+- **Interactive Endpoint Handles**: Hover or click any connector line to reveal draggable circular handles at both the parent and child ends. Drag either endpoint to manually pin it to the `top`, `right`, `bottom`, or `left` port of its card with live magnetic snap guides.
+- **Interactive Curve Shaping**: Drag the middle of any connector line to bend its Bezier curve, or double-click / press `Delete` on a selected connector to reset it to automatic routing.
+
+### 11. ✨ Crisp High-DPI Vector Rendering at All Zoom Levels
+- Eliminated Chromium GPU compositor texture freezing (`will-change` / `backdrop-filter`) and fractional `0.5px` sub-pixel card offsets so all cards, typography, borders, and SVG curves remain razor-sharp up to `350%` zoom without needing to click elements after zooming.
+
 ---
 
 ## ⌨️ Complete Keyboard Shortcuts Reference
