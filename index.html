@@ -942,10 +942,23 @@
       backdrop-filter: blur(16px);
       -webkit-backdrop-filter: blur(16px);
       overflow: hidden;
-      cursor: pointer;
+      cursor: grab;
+      user-select: none;
+      -webkit-user-select: none;
       z-index: 90;
       display: flex;
       flex-direction: column;
+      transition: border-color 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    #minimap-panel:hover {
+      border-color: var(--border-strong);
+    }
+
+    #minimap-panel.is-dragging {
+      cursor: grabbing;
+      border-color: var(--accent);
+      box-shadow: 0 12px 30px rgba(0, 0, 0, 0.55), 0 0 0 1px var(--accent);
     }
 
     #minimap-canvas {
@@ -957,7 +970,7 @@
     #minimap-viewport-box {
       position: absolute;
       border: 1.5px solid var(--accent);
-      background: rgba(99, 102, 241, 0.15);
+      background: rgba(99, 102, 241, 0.16);
       border-radius: 4px;
       pointer-events: none;
     }
@@ -3864,36 +3877,68 @@
       }
 
       // =========================================================================
-      // MINIMAP NAVIGATOR CONTROLLER
+      // MINIMAP NAVIGATOR CONTROLLER (WITH REAL-TIME CLICK & DRAG PANNING)
       // =========================================================================
-      function updateMinimap() {
+      function getMinimapMetrics() {
         const sheet = getActiveSheet();
         const mw = minimapCanvas.width;
         const mh = minimapCanvas.height;
 
-        minimapCtx.clearRect(0, 0, mw, mh);
-
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
         sheet.nodes.forEach(n => {
-          minX = Math.min(minX, n.x - 140);
-          maxX = Math.max(maxX, n.x + 140);
-          minY = Math.min(minY, n.y - 70);
-          maxY = Math.max(maxY, n.y + 70);
+          minX = Math.min(minX, n.x - 160);
+          maxX = Math.max(maxX, n.x + 160);
+          minY = Math.min(minY, n.y - 90);
+          maxY = Math.max(maxY, n.y + 90);
         });
 
-        const worldW = Math.max(100, maxX - minX);
-        const worldH = Math.max(100, maxY - minY);
-        const scale = Math.min(mw / worldW, mh / worldH) * 0.85;
+        if (!isFinite(minX)) {
+          minX = -200; maxX = 200; minY = -150; maxY = 150;
+        }
+
+        // Expand overview bounds so viewport box has room to glide smoothly across the radar
+        const padX = Math.max(850, window.innerWidth * 0.6);
+        const padY = Math.max(550, window.innerHeight * 0.6);
+        minX -= padX;
+        maxX += padX;
+        minY -= padY;
+        maxY += padY;
+
+        const worldW = Math.max(400, maxX - minX);
+        const worldH = Math.max(300, maxY - minY);
+        const scale = Math.min(mw / worldW, mh / worldH);
 
         const offX = mw / 2 - ((minX + maxX) / 2) * scale;
         const offY = mh / 2 - ((minY + maxY) / 2) * scale;
 
+        return { sheet, mw, mh, scale, offX, offY };
+      }
+
+      function updateMinimap() {
+        const { sheet, mw, mh, scale, offX, offY } = getMinimapMetrics();
+
+        minimapCtx.clearRect(0, 0, mw, mh);
+
+        // Draw subtle branch lines on minimap
+        minimapCtx.strokeStyle = "rgba(148, 163, 184, 0.28)";
+        minimapCtx.lineWidth = 1;
+        sheet.nodes.forEach(n => {
+          if (!n.parentId) return;
+          const p = sheet.nodes.find(x => x.id === n.parentId);
+          if (!p) return;
+          minimapCtx.beginPath();
+          minimapCtx.moveTo(p.x * scale + offX, p.y * scale + offY);
+          minimapCtx.lineTo(n.x * scale + offX, n.y * scale + offY);
+          minimapCtx.stroke();
+        });
+
+        // Draw node dots on minimap
         sheet.nodes.forEach(n => {
           const mx = n.x * scale + offX;
           const my = n.y * scale + offY;
           minimapCtx.fillStyle = n.color || "#6366f1";
           minimapCtx.beginPath();
-          minimapCtx.arc(mx, my, n.id === "root" ? 4 : 2.5, 0, Math.PI * 2);
+          minimapCtx.arc(mx, my, n.id === "root" ? 4 : 2.6, 0, Math.PI * 2);
           minimapCtx.fill();
         });
 
@@ -3902,42 +3947,58 @@
         const vpX = (-state.camera.x / state.camera.zoom) * scale + offX;
         const vpY = (-state.camera.y / state.camera.zoom) * scale + offY;
 
-        minimapViewportBox.style.width = `${Math.max(10, Math.min(mw, vpW))}px`;
-        minimapViewportBox.style.height = `${Math.max(8, Math.min(mh, vpH))}px`;
-        minimapViewportBox.style.left = `${Math.max(0, Math.min(mw - 10, vpX))}px`;
-        minimapViewportBox.style.top = `${Math.max(0, Math.min(mh - 8, vpY))}px`;
+        const clampedW = Math.max(12, Math.min(mw, vpW));
+        const clampedH = Math.max(10, Math.min(mh, vpH));
+        const clampedX = Math.max(0, Math.min(mw - clampedW, vpX));
+        const clampedY = Math.max(0, Math.min(mh - clampedH, vpY));
+
+        minimapViewportBox.style.width = `${clampedW}px`;
+        minimapViewportBox.style.height = `${clampedH}px`;
+        minimapViewportBox.style.left = `${clampedX}px`;
+        minimapViewportBox.style.top = `${clampedY}px`;
       }
 
-      document.getElementById("minimap-panel").addEventListener("mousedown", (e) => {
+      const minimapPanelEl = document.getElementById("minimap-panel");
+      let isDraggingMinimap = false;
+
+      function panCameraFromMinimapEvent(e) {
         const rect = minimapCanvas.getBoundingClientRect();
-        const clickX = e.clientX - rect.left;
-        const clickY = e.clientY - rect.top;
+        const clickX = (e.clientX - rect.left) * (minimapCanvas.width / rect.width);
+        const clickY = (e.clientY - rect.top) * (minimapCanvas.height / rect.height);
 
-        const sheet = getActiveSheet();
-        let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
-        sheet.nodes.forEach(n => {
-          minX = Math.min(minX, n.x - 140);
-          maxX = Math.max(maxX, n.x + 140);
-          minY = Math.min(minY, n.y - 70);
-          maxY = Math.max(maxY, n.y + 70);
-        });
-
-        const mw = minimapCanvas.width;
-        const mh = minimapCanvas.height;
-        const worldW = Math.max(100, maxX - minX);
-        const worldH = Math.max(100, maxY - minY);
-        const scale = Math.min(mw / worldW, mh / worldH) * 0.85;
-
-        const offX = mw / 2 - ((minX + maxX) / 2) * scale;
-        const offY = mh / 2 - ((minY + maxY) / 2) * scale;
-
+        const { scale, offX, offY } = getMinimapMetrics();
         const targetWorldX = (clickX - offX) / scale;
         const targetWorldY = (clickY - offY) / scale;
 
-        const targetX = window.innerWidth / 2 - targetWorldX * state.camera.zoom;
-        const targetY = window.innerHeight / 2 - targetWorldY * state.camera.zoom;
+        state.camera.x = window.innerWidth / 2 - targetWorldX * state.camera.zoom;
+        state.camera.y = window.innerHeight / 2 - targetWorldY * state.camera.zoom;
+        updateCameraTransform();
+      }
 
-        smoothCameraTo(targetX, targetY, state.camera.zoom, 300);
+      minimapPanelEl.addEventListener("mousedown", (e) => {
+        if (e.button !== 0) return;
+        e.preventDefault();
+        e.stopPropagation();
+
+        isDraggingMinimap = true;
+        minimapPanelEl.classList.add("is-dragging");
+        panCameraFromMinimapEvent(e);
+
+        function onMinimapMove(ev) {
+          if (!isDraggingMinimap) return;
+          ev.preventDefault();
+          panCameraFromMinimapEvent(ev);
+        }
+
+        function onMinimapUp() {
+          isDraggingMinimap = false;
+          minimapPanelEl.classList.remove("is-dragging");
+          window.removeEventListener("mousemove", onMinimapMove);
+          window.removeEventListener("mouseup", onMinimapUp);
+        }
+
+        window.addEventListener("mousemove", onMinimapMove);
+        window.addEventListener("mouseup", onMinimapUp);
       });
 
       // =========================================================================
