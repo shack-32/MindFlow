@@ -100,6 +100,92 @@
       --selection-outline: #f59e0b;
     }
 
+    body[data-theme="oled"] {
+      --bg-canvas: #000000;
+      --bg-grid: rgba(56, 189, 248, 0.08);
+      --bg-surface: rgba(12, 15, 24, 0.95);
+      --bg-surface-elevated: #0f131f;
+      --bg-hover: rgba(56, 189, 248, 0.1);
+      --border-subtle: rgba(255, 255, 255, 0.12);
+      --border-strong: rgba(56, 189, 248, 0.32);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+      --text-dim: #64748b;
+      --accent: #38bdf8;
+      --accent-glow: rgba(56, 189, 248, 0.35);
+      --connector-color: rgba(56, 189, 248, 0.35);
+      --connector-active: #7dd3fc;
+      --selection-outline: #38bdf8;
+    }
+
+    body[data-theme="emerald"] {
+      --bg-canvas: #06120e;
+      --bg-grid: rgba(16, 185, 129, 0.07);
+      --bg-surface: rgba(11, 29, 23, 0.94);
+      --bg-surface-elevated: #0f261e;
+      --bg-hover: rgba(16, 185, 129, 0.1);
+      --border-subtle: rgba(16, 185, 129, 0.15);
+      --border-strong: rgba(16, 185, 129, 0.32);
+      --text-main: #ecfdf5;
+      --text-muted: #a7f3d0;
+      --text-dim: #6ee7b7;
+      --accent: #10b981;
+      --accent-glow: rgba(16, 185, 129, 0.35);
+      --connector-color: rgba(16, 185, 129, 0.36);
+      --connector-active: #34d399;
+      --selection-outline: #10b981;
+    }
+
+    body[data-theme="cyber"] {
+      --bg-canvas: #0b0514;
+      --bg-grid: rgba(236, 72, 153, 0.08);
+      --bg-surface: rgba(23, 11, 40, 0.94);
+      --bg-surface-elevated: #1c0e30;
+      --bg-hover: rgba(236, 72, 153, 0.12);
+      --border-subtle: rgba(236, 72, 153, 0.18);
+      --border-strong: rgba(236, 72, 153, 0.38);
+      --text-main: #fdf2f8;
+      --text-muted: #f5d0fe;
+      --text-dim: #e879f9;
+      --accent: #ec4899;
+      --accent-glow: rgba(236, 72, 153, 0.4);
+      --connector-color: rgba(236, 72, 153, 0.38);
+      --connector-active: #f472b6;
+      --selection-outline: #ec4899;
+    }
+
+    body[data-theme="paper"] {
+      --bg-canvas: #fdf6e3;
+      --bg-grid: rgba(101, 123, 131, 0.1);
+      --bg-surface: rgba(255, 253, 247, 0.96);
+      --bg-surface-elevated: #fffdf7;
+      --bg-hover: rgba(7, 54, 66, 0.06);
+      --border-subtle: rgba(7, 54, 66, 0.12);
+      --border-strong: rgba(7, 54, 66, 0.24);
+      --text-main: #073642;
+      --text-muted: #586e75;
+      --text-dim: #839496;
+      --accent: #d97706;
+      --accent-glow: rgba(217, 119, 6, 0.24);
+      --connector-color: rgba(88, 110, 117, 0.35);
+      --connector-active: #d97706;
+      --selection-outline: #d97706;
+      --shadow-node: 0 6px 20px -3px rgba(7, 54, 66, 0.09), 0 0 0 1px rgba(7, 54, 66, 0.08);
+      --shadow-hover: 0 12px 28px -4px rgba(7, 54, 66, 0.14), 0 0 0 1px rgba(217, 119, 6, 0.35);
+      --shadow-selected: 0 0 0 2.5px #d97706, 0 10px 25px -4px rgba(217, 119, 6, 0.25);
+    }
+
+    body[data-grid="lines"] #canvas-viewport {
+      background-image:
+        linear-gradient(to right, var(--bg-grid) 1px, transparent 1px),
+        linear-gradient(to bottom, var(--bg-grid) 1px, transparent 1px);
+      background-size: 32px 32px;
+    }
+
+    body[data-grid="none"] #canvas-viewport {
+      background-image: none;
+    }
+
     * {
       box-sizing: border-box;
       margin: 0;
@@ -2022,20 +2108,41 @@
         </button>
         <div class="dropdown-menu" id="theme-menu">
           <div class="dropdown-item" data-theme="dark">
-            <span>Dark Studio</span>
+            <span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:50%; background:#090b10; border:2px solid #6366f1;"></span>Dark Studio</span>
             <span class="menu-checkmark">✓</span>
           </div>
-          <div class="dropdown-item" data-theme="light">
-            <span>Crisp Light</span>
+          <div class="dropdown-item" data-theme="oled">
+            <span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:50%; background:#000000; border:2px solid #38bdf8;"></span>Midnight OLED</span>
             <span class="menu-checkmark"></span>
           </div>
           <div class="dropdown-item" data-theme="nord">
-            <span>Nord Slate</span>
+            <span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:50%; background:#242933; border:2px solid #88c0d0;"></span>Nord Slate</span>
+            <span class="menu-checkmark"></span>
+          </div>
+          <div class="dropdown-item" data-theme="emerald">
+            <span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:50%; background:#06120e; border:2px solid #10b981;"></span>Forest Emerald</span>
+            <span class="menu-checkmark"></span>
+          </div>
+          <div class="dropdown-item" data-theme="cyber">
+            <span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:50%; background:#0b0514; border:2px solid #ec4899;"></span>Cyberpunk Neon</span>
             <span class="menu-checkmark"></span>
           </div>
           <div class="dropdown-item" data-theme="warm">
-            <span>Warm Amber</span>
+            <span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:50%; background:#1c1917; border:2px solid #f59e0b;"></span>Warm Amber</span>
             <span class="menu-checkmark"></span>
+          </div>
+          <div class="dropdown-item" data-theme="light">
+            <span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:50%; background:#f8fafc; border:2px solid #4f46e5;"></span>Crisp Light</span>
+            <span class="menu-checkmark"></span>
+          </div>
+          <div class="dropdown-item" data-theme="paper">
+            <span style="display:inline-flex; align-items:center; gap:8px;"><span style="width:10px; height:10px; border-radius:50%; background:#fdf6e3; border:2px solid #d97706;"></span>Solarized Paper</span>
+            <span class="menu-checkmark"></span>
+          </div>
+          <div class="dropdown-divider"></div>
+          <div class="dropdown-item" id="btn-open-theme-customizer">
+            <span style="display:inline-flex; align-items:center; gap:8px; color:var(--accent); font-weight:600;">🎨 Customize Theme...</span>
+            <span class="dropdown-item-desc">Studio</span>
           </div>
         </div>
       </div>
@@ -2492,6 +2599,81 @@
       </div>
     </div>
 
+    <!-- Theme Customizer Studio Modal -->
+    <div class="modal-overlay" id="theme-customizer-modal">
+      <div class="modal-box" style="max-width:480px;">
+        <div class="modal-title">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.2rem;">🎨</span>
+            <span>Theme Studio & Customizer</span>
+          </div>
+          <button class="modal-close-btn" id="btn-close-theme-modal">&times;</button>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Base Preset Theme</label>
+          <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:6px;" id="theme-modal-preset-group">
+            <button class="ui-btn" data-preset-theme="dark" style="border:1px solid var(--border-strong); justify-content:center; font-size:0.75rem;">Dark</button>
+            <button class="ui-btn" data-preset-theme="oled" style="border:1px solid var(--border-strong); justify-content:center; font-size:0.75rem;">OLED</button>
+            <button class="ui-btn" data-preset-theme="nord" style="border:1px solid var(--border-strong); justify-content:center; font-size:0.75rem;">Nord</button>
+            <button class="ui-btn" data-preset-theme="emerald" style="border:1px solid var(--border-strong); justify-content:center; font-size:0.75rem;">Emerald</button>
+            <button class="ui-btn" data-preset-theme="cyber" style="border:1px solid var(--border-strong); justify-content:center; font-size:0.75rem;">Cyber</button>
+            <button class="ui-btn" data-preset-theme="warm" style="border:1px solid var(--border-strong); justify-content:center; font-size:0.75rem;">Warm</button>
+            <button class="ui-btn" data-preset-theme="light" style="border:1px solid var(--border-strong); justify-content:center; font-size:0.75rem;">Light</button>
+            <button class="ui-btn" data-preset-theme="paper" style="border:1px solid var(--border-strong); justify-content:center; font-size:0.75rem;">Paper</button>
+          </div>
+        </div>
+
+        <div style="display:grid; grid-template-columns:1fr 1fr; gap:12px;">
+          <div class="form-group">
+            <label class="form-label">Canvas Background</label>
+            <div style="display:flex; align-items:center; gap:8px; background:var(--bg-surface); border:1px solid var(--border-strong); padding:6px 10px; border-radius:10px;">
+              <input type="color" id="theme-custom-bg-canvas" value="#090b10" style="width:28px; height:28px; border:none; background:transparent; cursor:pointer;" />
+              <span id="theme-val-bg-canvas" style="font-family:var(--font-mono); font-size:0.78rem; color:var(--text-muted);">#090b10</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Card / Surface Fill</label>
+            <div style="display:flex; align-items:center; gap:8px; background:var(--bg-surface); border:1px solid var(--border-strong); padding:6px 10px; border-radius:10px;">
+              <input type="color" id="theme-custom-bg-surface" value="#161b2a" style="width:28px; height:28px; border:none; background:transparent; cursor:pointer;" />
+              <span id="theme-val-bg-surface" style="font-family:var(--font-mono); font-size:0.78rem; color:var(--text-muted);">#161b2a</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Primary Text Color</label>
+            <div style="display:flex; align-items:center; gap:8px; background:var(--bg-surface); border:1px solid var(--border-strong); padding:6px 10px; border-radius:10px;">
+              <input type="color" id="theme-custom-text-main" value="#f1f5f9" style="width:28px; height:28px; border:none; background:transparent; cursor:pointer;" />
+              <span id="theme-val-text-main" style="font-family:var(--font-mono); font-size:0.78rem; color:var(--text-muted);">#f1f5f9</span>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label">Theme Accent & Glow</label>
+            <div style="display:flex; align-items:center; gap:8px; background:var(--bg-surface); border:1px solid var(--border-strong); padding:6px 10px; border-radius:10px;">
+              <input type="color" id="theme-custom-accent" value="#6366f1" style="width:28px; height:28px; border:none; background:transparent; cursor:pointer;" />
+              <span id="theme-val-accent" style="font-family:var(--font-mono); font-size:0.78rem; color:var(--text-muted);">#6366f1</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <label class="form-label">Canvas Grid Pattern</label>
+          <div style="display:flex; gap:8px;" id="theme-grid-style-group">
+            <button class="ui-btn is-active" data-grid-style="dots" style="flex:1; border:1px solid var(--border-strong); justify-content:center;">Dots Grid</button>
+            <button class="ui-btn" data-grid-style="lines" style="flex:1; border:1px solid var(--border-strong); justify-content:center;">Line Grid</button>
+            <button class="ui-btn" data-grid-style="none" style="flex:1; border:1px solid var(--border-strong); justify-content:center;">Clean Blank</button>
+          </div>
+        </div>
+
+        <div style="display:flex; justify-content:space-between; align-items:center; margin-top:8px; padding-top:12px; border-top:1px solid var(--border-subtle);">
+          <button class="ui-btn" id="btn-reset-theme-custom" style="border:1px solid var(--border-subtle);">↺ Reset to Preset</button>
+          <button class="ui-btn primary" id="btn-save-theme-custom">Done</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Shortcuts Modal -->
     <div class="modal-overlay" id="shortcuts-modal">
       <div class="modal-box">
@@ -2743,6 +2925,8 @@
       let state = {
         title: "Course Concept Map",
         theme: "dark",
+        customTheme: null,
+        gridStyle: "dots",
         activeTool: "select", // "select", "pan", "connect", "boundary"
         activeSheetId: "sheet-1",
         sheets: [
@@ -2786,6 +2970,8 @@
         const snapshot = JSON.stringify({
           title: state.title,
           theme: state.theme,
+          customTheme: state.customTheme,
+          gridStyle: state.gridStyle,
           activeSheetId: state.activeSheetId,
           sheets: state.sheets
         });
@@ -2816,10 +3002,12 @@
           const data = JSON.parse(jsonStr);
           state.title = data.title;
           state.theme = data.theme;
+          state.customTheme = data.customTheme || null;
+          state.gridStyle = data.gridStyle || "dots";
           state.sheets = data.sheets;
           state.activeSheetId = data.activeSheetId || data.sheets[0].id;
           document.getElementById('project-title-input').value = state.title;
-          applyTheme(state.theme);
+          applyTheme(state.theme, false, true);
           updateSheetTabs();
           updateLayoutLabel();
           render();
@@ -2833,6 +3021,8 @@
           const serialized = JSON.stringify({
             title: state.title,
             theme: state.theme,
+            customTheme: state.customTheme,
+            gridStyle: state.gridStyle,
             activeSheetId: state.activeSheetId,
             sheets: state.sheets
           });
@@ -2848,10 +3038,12 @@
             if (data && Array.isArray(data.sheets) && data.sheets.length > 0) {
               state.title = data.title || "My Mind Map";
               state.theme = data.theme || "dark";
+              state.customTheme = data.customTheme || null;
+              state.gridStyle = data.gridStyle || "dots";
               state.sheets = data.sheets;
               state.activeSheetId = data.activeSheetId || data.sheets[0].id;
               document.getElementById('project-title-input').value = state.title;
-              applyTheme(state.theme);
+              applyTheme(state.theme, false, true);
               updateSheetTabs();
               updateLayoutLabel();
             }
@@ -6413,18 +6605,65 @@
         }, 2200);
       }
 
-      function applyTheme(themeName) {
-        state.theme = themeName;
-        document.body.setAttribute("data-theme", themeName);
+      const THEME_PRESET_DEFAULTS = {
+        dark:    { bgCanvas: "#090b10", bgSurface: "#161b2a", textMain: "#f1f5f9", accent: "#6366f1" },
+        oled:    { bgCanvas: "#000000", bgSurface: "#0f131f", textMain: "#f8fafc", accent: "#38bdf8" },
+        nord:    { bgCanvas: "#242933", bgSurface: "#3b4252", textMain: "#eceff4", accent: "#88c0d0" },
+        emerald: { bgCanvas: "#06120e", bgSurface: "#0f261e", textMain: "#ecfdf5", accent: "#10b981" },
+        cyber:   { bgCanvas: "#0b0514", bgSurface: "#1c0e30", textMain: "#fdf2f8", accent: "#ec4899" },
+        warm:    { bgCanvas: "#1c1917", bgSurface: "#292524", textMain: "#fafaf9", accent: "#f59e0b" },
+        light:   { bgCanvas: "#f8fafc", bgSurface: "#ffffff", textMain: "#0f172a", accent: "#4f46e5" },
+        paper:   { bgCanvas: "#fdf6e3", bgSurface: "#fffdf7", textMain: "#073642", accent: "#d97706" }
+      };
+
+      function clearCustomThemeInlineVars() {
+        const props = [
+          "--bg-canvas", "--bg-surface", "--bg-surface-elevated",
+          "--text-main", "--accent", "--accent-glow",
+          "--connector-active", "--selection-outline"
+        ];
+        props.forEach(p => document.body.style.removeProperty(p));
+      }
+
+      function applyCustomThemeOverrides() {
+        document.body.setAttribute("data-grid", state.gridStyle || "dots");
+        if (!state.customTheme) {
+          clearCustomThemeInlineVars();
+          return;
+        }
+        const ct = state.customTheme;
+        if (ct.bgCanvas) document.body.style.setProperty("--bg-canvas", ct.bgCanvas);
+        if (ct.bgSurface) {
+          document.body.style.setProperty("--bg-surface-elevated", ct.bgSurface);
+          document.body.style.setProperty("--bg-surface", hexToRgba(ct.bgSurface, 0.93));
+        }
+        if (ct.textMain) document.body.style.setProperty("--text-main", ct.textMain);
+        if (ct.accent) {
+          document.body.style.setProperty("--accent", ct.accent);
+          document.body.style.setProperty("--accent-glow", hexToRgba(ct.accent, 0.35));
+          document.body.style.setProperty("--connector-active", ct.accent);
+          document.body.style.setProperty("--selection-outline", ct.accent);
+        }
+      }
+
+      function applyTheme(themeName, resetCustom = true, silent = false) {
+        state.theme = themeName || "dark";
+        if (resetCustom) {
+          state.customTheme = null;
+        }
+        document.body.setAttribute("data-theme", state.theme);
+        applyCustomThemeOverrides();
         updateThemeCheckmarks();
-        pushHistory();
-        render();
-        showToast(`Theme: ${themeName}`);
+        if (!silent) {
+          pushHistory();
+          render();
+          showToast(`Theme: ${state.theme}`);
+        }
       }
 
       function updateThemeCheckmarks() {
-        document.querySelectorAll("#theme-menu .dropdown-item").forEach(item => {
-          const isActive = item.dataset.theme === state.theme;
+        document.querySelectorAll("#theme-menu .dropdown-item[data-theme]").forEach(item => {
+          const isActive = item.dataset.theme === state.theme && !state.customTheme;
           item.classList.toggle("is-active", isActive);
           let check = item.querySelector(".menu-checkmark");
           if (!check) {
@@ -6434,6 +6673,49 @@
           }
           check.textContent = isActive ? "✓" : "";
         });
+      }
+
+      function syncThemeCustomizerControls() {
+        const defaults = THEME_PRESET_DEFAULTS[state.theme] || THEME_PRESET_DEFAULTS.dark;
+        const ct = state.customTheme || {};
+        const bgCanvas = ct.bgCanvas || defaults.bgCanvas;
+        const bgSurface = ct.bgSurface || defaults.bgSurface;
+        const textMain = ct.textMain || defaults.textMain;
+        const accent = ct.accent || defaults.accent;
+
+        const inCanvas = document.getElementById("theme-custom-bg-canvas");
+        const inSurface = document.getElementById("theme-custom-bg-surface");
+        const inText = document.getElementById("theme-custom-text-main");
+        const inAccent = document.getElementById("theme-custom-accent");
+
+        if (inCanvas) inCanvas.value = bgCanvas;
+        if (inSurface) inSurface.value = bgSurface;
+        if (inText) inText.value = textMain;
+        if (inAccent) inAccent.value = accent;
+
+        const vCanvas = document.getElementById("theme-val-bg-canvas");
+        const vSurface = document.getElementById("theme-val-bg-surface");
+        const vText = document.getElementById("theme-val-text-main");
+        const vAccent = document.getElementById("theme-val-accent");
+
+        if (vCanvas) vCanvas.textContent = bgCanvas;
+        if (vSurface) vSurface.textContent = bgSurface;
+        if (vText) vText.textContent = textMain;
+        if (vAccent) vAccent.textContent = accent;
+
+        document.querySelectorAll("#theme-modal-preset-group [data-preset-theme]").forEach(btn => {
+          btn.classList.toggle("is-active", btn.dataset.presetTheme === state.theme);
+        });
+
+        const curGrid = state.gridStyle || "dots";
+        document.querySelectorAll("#theme-grid-style-group [data-grid-style]").forEach(btn => {
+          btn.classList.toggle("is-active", btn.dataset.gridStyle === curGrid);
+        });
+      }
+
+      function openThemeCustomizerModal() {
+        syncThemeCustomizerControls();
+        document.getElementById("theme-customizer-modal")?.classList.add("is-open");
       }
 
       function updateLayoutLabel() {
@@ -6785,11 +7067,75 @@
         });
       });
 
-      document.querySelectorAll("#theme-menu .dropdown-item").forEach(item => {
+      document.querySelectorAll("#theme-menu .dropdown-item[data-theme]").forEach(item => {
         item.addEventListener("click", () => {
           closeAllDropdowns();
-          applyTheme(item.dataset.theme);
+          applyTheme(item.dataset.theme, true, false);
         });
+      });
+
+      document.getElementById("btn-open-theme-customizer")?.addEventListener("click", (e) => {
+        e.stopPropagation();
+        closeAllDropdowns();
+        openThemeCustomizerModal();
+      });
+
+      const themeModalEl = document.getElementById("theme-customizer-modal");
+      document.getElementById("btn-close-theme-modal")?.addEventListener("click", () => {
+        themeModalEl?.classList.remove("is-open");
+      });
+      document.getElementById("btn-save-theme-custom")?.addEventListener("click", () => {
+        themeModalEl?.classList.remove("is-open");
+        pushHistory();
+        showToast("Theme Settings Saved");
+      });
+      themeModalEl?.addEventListener("click", (e) => {
+        if (e.target === themeModalEl) themeModalEl.classList.remove("is-open");
+      });
+
+      document.querySelectorAll("#theme-modal-preset-group [data-preset-theme]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          applyTheme(btn.dataset.presetTheme, true, false);
+          syncThemeCustomizerControls();
+        });
+      });
+
+      function handleCustomThemeInputChange(commit = false) {
+        const defaults = THEME_PRESET_DEFAULTS[state.theme] || THEME_PRESET_DEFAULTS.dark;
+        const bgCanvas = document.getElementById("theme-custom-bg-canvas")?.value || defaults.bgCanvas;
+        const bgSurface = document.getElementById("theme-custom-bg-surface")?.value || defaults.bgSurface;
+        const textMain = document.getElementById("theme-custom-text-main")?.value || defaults.textMain;
+        const accent = document.getElementById("theme-custom-accent")?.value || defaults.accent;
+
+        state.customTheme = { bgCanvas, bgSurface, textMain, accent };
+        applyCustomThemeOverrides();
+        syncThemeCustomizerControls();
+        updateThemeCheckmarks();
+        render();
+        if (commit) pushHistory();
+      }
+
+      ["theme-custom-bg-canvas", "theme-custom-bg-surface", "theme-custom-text-main", "theme-custom-accent"].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) {
+          el.addEventListener("input", () => handleCustomThemeInputChange(false));
+          el.addEventListener("change", () => handleCustomThemeInputChange(true));
+        }
+      });
+
+      document.querySelectorAll("#theme-grid-style-group [data-grid-style]").forEach(btn => {
+        btn.addEventListener("click", () => {
+          state.gridStyle = btn.dataset.gridStyle || "dots";
+          applyCustomThemeOverrides();
+          syncThemeCustomizerControls();
+          pushHistory();
+        });
+      });
+
+      document.getElementById("btn-reset-theme-custom")?.addEventListener("click", () => {
+        applyTheme(state.theme, true, false);
+        syncThemeCustomizerControls();
+        showToast("Theme Reset to Preset Defaults");
       });
 
       document.querySelectorAll("#templates-menu .dropdown-item").forEach(item => {
