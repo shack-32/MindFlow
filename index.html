@@ -4039,12 +4039,46 @@
       }
 
       // =========================================================================
-      // CAMERA CONTROLLER: TWO-FINGER TRACKPAD SLIDE & PINCH-ZOOM
+      // CAMERA CONTROLLER: TWO-FINGER TRACKPAD SLIDE, PINCH-ZOOM & CRISP RASTER
       // =========================================================================
+      let lastRasterZoom = 1;
+      let zoomRasterTimer = null;
+
+      function flushHighResCanvasRaster() {
+        // Force Chromium/Blink compositor to re-rasterize vector glyphs, borders, and SVG paths
+        // at the exact new zoom scale without needing the user to click an element
+        const z = Number(state.camera.zoom.toFixed(4));
+        const tx = Math.round(state.camera.x * 2) / 2;
+        const ty = Math.round(state.camera.y * 2) / 2;
+        worldEl.style.transform = `translate(${tx}px, ${ty}px) scale(${z})`;
+
+        const nodes = nodesLayer.querySelectorAll(".mind-node");
+        nodes.forEach(el => {
+          // Trigger paint invalidation on each card's backing store just like clicking it does
+          el.style.outline = "0.01px solid transparent";
+        });
+        connectorsSvg.style.outline = "0.01px solid transparent";
+        // Force synchronous style/layout read so Blink marks display items dirty at current scale
+        void worldEl.offsetHeight;
+        requestAnimationFrame(() => {
+          nodes.forEach(el => {
+            el.style.outline = "";
+          });
+          connectorsSvg.style.outline = "";
+        });
+      }
+
       function updateCameraTransform() {
-        worldEl.style.transform = `translate(${state.camera.x}px, ${state.camera.y}px) scale(${state.camera.zoom})`;
+        const z = Number(state.camera.zoom.toFixed(4));
+        worldEl.style.transform = `translate(${state.camera.x}px, ${state.camera.y}px) scale(${z})`;
         zoomDisplay.textContent = `${Math.round(state.camera.zoom * 100)}%`;
         updateMinimap();
+
+        if (Math.abs(z - lastRasterZoom) > 0.001) {
+          lastRasterZoom = z;
+          if (zoomRasterTimer) clearTimeout(zoomRasterTimer);
+          zoomRasterTimer = setTimeout(flushHighResCanvasRaster, 55);
+        }
       }
 
       // Fluid Wheel Handler: Handles Trackpad 2-finger Slide vs Zoom
@@ -4251,18 +4285,23 @@
 
           if (progress < 1) {
             requestAnimationFrame(step);
+          } else {
+            flushHighResCanvasRaster();
           }
         }
         requestAnimationFrame(step);
       }
 
       // =========================================================================
-      // MINIMAP NAVIGATOR CONTROLLER (WITH REAL-TIME CLICK & DRAG PANNING)
+      // MINIMAP NAVIGATOR CONTROLLER (HIGH-DPI + REAL-TIME CLICK & DRAG PANNING)
       // =========================================================================
+      const MINIMAP_LOGICAL_W = 180;
+      const MINIMAP_LOGICAL_H = 120;
+
       function getMinimapMetrics() {
         const sheet = getActiveSheet();
-        const mw = minimapCanvas.width;
-        const mh = minimapCanvas.height;
+        const mw = MINIMAP_LOGICAL_W;
+        const mh = MINIMAP_LOGICAL_H;
 
         let minX = Infinity, maxX = -Infinity, minY = Infinity, maxY = -Infinity;
         sheet.nodes.forEach(n => {
@@ -4297,6 +4336,17 @@
       function updateMinimap() {
         const { sheet, mw, mh, scale, offX, offY } = getMinimapMetrics();
 
+        // Ensure crisp High-DPI / Retina backing store for minimap canvas
+        const dpr = Math.max(2, window.devicePixelRatio || 1);
+        const targetW = Math.round(mw * dpr);
+        const targetH = Math.round(mh * dpr);
+        if (minimapCanvas.width !== targetW || minimapCanvas.height !== targetH) {
+          minimapCanvas.width = targetW;
+          minimapCanvas.height = targetH;
+          minimapCanvas.style.width = `${mw}px`;
+          minimapCanvas.style.height = `${mh}px`;
+        }
+        minimapCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
         minimapCtx.clearRect(0, 0, mw, mh);
 
         // Draw subtle branch lines on minimap
@@ -4343,8 +4393,8 @@
 
       function panCameraFromMinimapEvent(e) {
         const rect = minimapCanvas.getBoundingClientRect();
-        const clickX = (e.clientX - rect.left) * (minimapCanvas.width / rect.width);
-        const clickY = (e.clientY - rect.top) * (minimapCanvas.height / rect.height);
+        const clickX = (e.clientX - rect.left) * (MINIMAP_LOGICAL_W / rect.width);
+        const clickY = (e.clientY - rect.top) * (MINIMAP_LOGICAL_H / rect.height);
 
         const { scale, offX, offY } = getMinimapMetrics();
         const targetWorldX = (clickX - offX) / scale;
