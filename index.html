@@ -171,6 +171,15 @@
       z-index: 20;
     }
 
+    #handles-svg {
+      position: absolute;
+      top: 0;
+      left: 0;
+      overflow: visible;
+      pointer-events: none;
+      z-index: 45;
+    }
+
     /* Marquee Box Selection */
     #marquee-box {
       position: absolute;
@@ -668,16 +677,75 @@
     }
 
     /* Connectors & Arrows */
+    path.connector-hit-path {
+      fill: none;
+      stroke: transparent;
+      stroke-width: 18px;
+      pointer-events: stroke;
+      cursor: grab;
+    }
+
+    path.connector-hit-path:active {
+      cursor: grabbing;
+    }
+
     path.connector-path {
       fill: none;
       stroke-linecap: round;
       stroke-linejoin: round;
+      pointer-events: stroke;
+      cursor: grab;
       transition: stroke 0.2s ease, stroke-width 0.2s ease, opacity 0.2s ease;
     }
 
-    path.connector-path:hover {
+    path.connector-path:hover,
+    path.connector-path.is-hovered,
+    path.connector-path.is-selected {
       stroke: var(--connector-active) !important;
-      stroke-width: 3.4px !important;
+      stroke-width: 3.6px !important;
+      filter: drop-shadow(0 0 6px var(--accent-glow));
+    }
+
+    .connector-port-handle {
+      fill: var(--bg-surface-elevated);
+      stroke: var(--accent);
+      stroke-width: 2.2px;
+      pointer-events: all;
+      cursor: grab;
+      opacity: 0;
+      transition: opacity 0.16s ease, fill 0.16s ease, stroke 0.16s ease;
+      filter: drop-shadow(0 2px 5px rgba(0, 0, 0, 0.45));
+    }
+
+    .connector-port-handle.is-visible,
+    .connector-port-handle:hover {
+      opacity: 1;
+    }
+
+    .connector-port-handle:hover {
+      fill: var(--accent);
+      stroke: #ffffff;
+    }
+
+    .connector-port-handle:active {
+      cursor: grabbing;
+      fill: #38bdf8;
+      stroke: #ffffff;
+    }
+
+    .port-snap-guide {
+      fill: rgba(99, 102, 241, 0.22);
+      stroke: rgba(129, 140, 248, 0.85);
+      stroke-width: 1.8px;
+      pointer-events: none;
+      transition: fill 0.12s ease, stroke 0.12s ease;
+    }
+
+    .port-snap-guide.is-active {
+      fill: #38bdf8;
+      stroke: #ffffff;
+      stroke-width: 2.5px;
+      filter: drop-shadow(0 0 8px rgba(56, 189, 248, 0.95));
     }
 
     path.relationship-path {
@@ -1583,6 +1651,11 @@
 
         <!-- Dynamic Mind Map Nodes Layer -->
         <div id="nodes-layer"></div>
+        <!-- Interactive Connector Port Handles Layer (above nodes) -->
+        <svg id="handles-svg">
+          <g id="connector-handles-group"></g>
+          <g id="port-snap-guides-group"></g>
+        </svg>
         <!-- Drag & Drop Reorder Line Indicator -->
         <div id="drag-drop-indicator" class="drag-drop-indicator" style="display:none;"></div>
       </div>
@@ -2426,6 +2499,7 @@
         selectedNodeIds: new Set(["root"]),
         selectedRelId: null,
         selectedBoundaryId: null,
+        selectedConnectorNodeId: null,
         camera: { x: window.innerWidth / 2, y: window.innerHeight / 2, zoom: 1 },
         isConnectingRel: false,
         connectSourceId: null,
@@ -2535,6 +2609,9 @@
       const branchGroup = document.getElementById("branch-connectors-group");
       const relGroup = document.getElementById("relationships-group");
       const nodesLayer = document.getElementById("nodes-layer");
+      const handlesSvg = document.getElementById("handles-svg");
+      const connectorHandlesGroup = document.getElementById("connector-handles-group");
+      const portSnapGuidesGroup = document.getElementById("port-snap-guides-group");
       const marqueeBoxEl = document.getElementById("marquee-box");
       const contextMenuEl = document.getElementById("app-context-menu");
       const inspectorEl = document.getElementById("node-inspector");
@@ -2807,13 +2884,370 @@
       }
 
       // =========================================================================
+      // SMART 4-SIDE CONNECTOR PORT ENGINE & INTERACTIVE PORT DRAGGING
+      // =========================================================================
+      const PORT_SIDES = ["top", "right", "bottom", "left"];
+
+      function getNodePortPoint(node, dim, port) {
+        const w = (dim && dim.w) || 180;
+        const h = (dim && dim.h) || 54;
+        switch (port) {
+          case "top":
+            return { x: node.x, y: node.y - h / 2, nx: 0, ny: -1, port: "top" };
+          case "bottom":
+            return { x: node.x, y: node.y + h / 2, nx: 0, ny: 1, port: "bottom" };
+          case "left":
+            return { x: node.x - w / 2, y: node.y, nx: -1, ny: 0, port: "left" };
+          case "right":
+          default:
+            return { x: node.x + w / 2, y: node.y, nx: 1, ny: 0, port: "right" };
+        }
+      }
+
+      function getAutoBranchPorts(parent, pDim, node, nDim, layout) {
+        if (layout === "tree-down") {
+          return { fromPort: "bottom", toPort: "top" };
+        }
+        if (layout === "radial" || layout === "tree-right") {
+          return node.x >= parent.x
+            ? { fromPort: "right", toPort: "left" }
+            : { fromPort: "left", toPort: "right" };
+        }
+
+        // Freeform Canvas (or dynamic 2D placement): smart nearest-facing port selection
+        const dx = node.x - parent.x;
+        const dy = node.y - parent.y;
+        const pw = (pDim && pDim.w) || 180;
+        const ph = (pDim && pDim.h) || 54;
+        const nw = (nDim && nDim.w) || 180;
+        const nh = (nDim && nDim.h) || 54;
+
+        const gapX = Math.abs(dx) - (pw / 2 + nw / 2);
+        const gapY = Math.abs(dy) - (ph / 2 + nh / 2);
+
+        const isPredominantlyVertical = (gapY > 8 && gapY >= gapX * 0.65) || (Math.abs(dy) >= Math.abs(dx) * 0.65);
+
+        if (isPredominantlyVertical) {
+          return dy >= 0
+            ? { fromPort: "bottom", toPort: "top" }
+            : { fromPort: "top", toPort: "bottom" };
+        } else {
+          return dx >= 0
+            ? { fromPort: "right", toPort: "left" }
+            : { fromPort: "left", toPort: "right" };
+        }
+      }
+
+      function resolveBranchPorts(parent, pDim, node, nDim, layout) {
+        const auto = getAutoBranchPorts(parent, pDim, node, nDim, layout);
+        return {
+          fromPort: node.fromPort || auto.fromPort,
+          toPort: node.toPort || auto.toPort
+        };
+      }
+
+      function buildConnectorBezierPath(p1, p2) {
+        const dx = p2.x - p1.x;
+        const dy = p2.y - p1.y;
+        const dist = Math.hypot(dx, dy);
+
+        let t1, t2;
+        if (p1.nx !== 0 && p2.nx !== 0 && p1.nx === -p2.nx) {
+          t1 = t2 = Math.max(36, Math.abs(dx) * 0.5);
+        } else if (p1.ny !== 0 && p2.ny !== 0 && p1.ny === -p2.ny) {
+          t1 = t2 = Math.max(36, Math.abs(dy) * 0.52);
+        } else {
+          t1 = t2 = Math.max(48, Math.min(180, dist * 0.48));
+        }
+
+        const cp1x = p1.x + p1.nx * t1;
+        const cp1y = p1.y + p1.ny * t1;
+        const cp2x = p2.x + p2.nx * t2;
+        const cp2y = p2.y + p2.ny * t2;
+
+        return `M ${p1.x} ${p1.y} C ${cp1x} ${cp1y}, ${cp2x} ${cp2y}, ${p2.x} ${p2.y}`;
+      }
+
+      function getLiveNodeDim(nodeId) {
+        const el = document.getElementById(`node-${nodeId}`);
+        if (el && el.offsetWidth > 0 && el.offsetHeight > 0) {
+          return { w: el.offsetWidth, h: el.offsetHeight };
+        }
+        return { w: 180, h: 54 };
+      }
+
+      function updateFreeformConnectorsLive() {
+        const sheet = getActiveSheet();
+        sheet.nodes.forEach(n => {
+          if (!n.parentId) return;
+          const p = sheet.nodes.find(x => x.id === n.parentId);
+          if (!p) return;
+          const pDim = getLiveNodeDim(p.id);
+          const nDim = getLiveNodeDim(n.id);
+          const ports = resolveBranchPorts(p, pDim, n, nDim, sheet.layout);
+          const p1 = getNodePortPoint(p, pDim, ports.fromPort);
+          const p2 = getNodePortPoint(n, nDim, ports.toPort);
+          const pathD = buildConnectorBezierPath(p1, p2);
+
+          const pathEl = document.getElementById(`conn-${n.id}`);
+          const hitEl = document.getElementById(`conn-hit-${n.id}`);
+          const fromH = document.getElementById(`conn-from-handle-${n.id}`);
+          const toH = document.getElementById(`conn-to-handle-${n.id}`);
+
+          if (pathEl) pathEl.setAttribute("d", pathD);
+          if (hitEl) hitEl.setAttribute("d", pathD);
+          if (fromH) {
+            fromH.setAttribute("cx", p1.x);
+            fromH.setAttribute("cy", p1.y);
+          }
+          if (toH) {
+            toH.setAttribute("cx", p2.x);
+            toH.setAttribute("cy", p2.y);
+          }
+        });
+      }
+
+      function initConnectorPortDrag(startEvent, node, parent, endMode) {
+        if (startEvent.button !== 0 || state.isPresenting) return;
+        startEvent.stopPropagation();
+        startEvent.preventDefault();
+
+        const sheet = getActiveSheet();
+        state.selectedConnectorNodeId = node.id;
+        state.selectedRelId = null;
+        state.selectedBoundaryId = null;
+
+        const pDim = getLiveNodeDim(parent.id);
+        const nDim = getLiveNodeDim(node.id);
+
+        const parentPorts = PORT_SIDES.map(side => getNodePortPoint(parent, pDim, side));
+        const nodePorts = PORT_SIDES.map(side => getNodePortPoint(node, nDim, side));
+
+        // Render candidate port rings on both parent and child cards
+        portSnapGuidesGroup.innerHTML = "";
+        const guideEls = { parent: {}, node: {} };
+
+        parentPorts.forEach(pt => {
+          const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          c.setAttribute("class", "port-snap-guide");
+          c.setAttribute("cx", pt.x);
+          c.setAttribute("cy", pt.y);
+          c.setAttribute("r", "5.5");
+          portSnapGuidesGroup.appendChild(c);
+          guideEls.parent[pt.port] = c;
+        });
+
+        nodePorts.forEach(pt => {
+          const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+          c.setAttribute("class", "port-snap-guide");
+          c.setAttribute("cx", pt.x);
+          c.setAttribute("cy", pt.y);
+          c.setAttribute("r", "5.5");
+          portSnapGuidesGroup.appendChild(c);
+          guideEls.node[pt.port] = c;
+        });
+
+        const pathEl = document.getElementById(`conn-${node.id}`);
+        const hitEl = document.getElementById(`conn-hit-${node.id}`);
+        const fromH = document.getElementById(`conn-from-handle-${node.id}`);
+        const toH = document.getElementById(`conn-to-handle-${node.id}`);
+
+        if (pathEl) pathEl.classList.add("is-selected");
+        if (fromH) fromH.classList.add("is-visible");
+        if (toH) toH.classList.add("is-visible");
+
+        let hasDragged = false;
+        let lastSnappedLabel = "";
+        const startClientX = startEvent.clientX;
+        const startClientY = startEvent.clientY;
+
+        function onMove(ev) {
+          if (Math.hypot(ev.clientX - startClientX, ev.clientY - startClientY) > 3) {
+            hasDragged = true;
+          }
+          if (!hasDragged) return;
+
+          const wx = (ev.clientX - state.camera.x) / state.camera.zoom;
+          const wy = (ev.clientY - state.camera.y) / state.camera.zoom;
+
+          let bestP = parentPorts[0];
+          let minPDist = Infinity;
+          parentPorts.forEach(pt => {
+            const d = Math.hypot(wx - pt.x, wy - pt.y);
+            if (d < minPDist) { minPDist = d; bestP = pt; }
+          });
+
+          let bestN = nodePorts[0];
+          let minNDist = Infinity;
+          nodePorts.forEach(pt => {
+            const d = Math.hypot(wx - pt.x, wy - pt.y);
+            if (d < minNDist) { minNDist = d; bestN = pt; }
+          });
+
+          Object.values(guideEls.parent).forEach(el => { el.classList.remove("is-active"); el.setAttribute("r", "5.5"); });
+          Object.values(guideEls.node).forEach(el => { el.classList.remove("is-active"); el.setAttribute("r", "5.5"); });
+
+          const targetEnd = endMode === "auto" ? (minPDist < minNDist ? "from" : "to") : endMode;
+
+          if (targetEnd === "from") {
+            node.fromPort = bestP.port;
+            const gEl = guideEls.parent[bestP.port];
+            if (gEl) { gEl.classList.add("is-active"); gEl.setAttribute("r", "7.5"); }
+            lastSnappedLabel = `Pinned parent port to ${bestP.port.toUpperCase()}`;
+          } else {
+            node.toPort = bestN.port;
+            const gEl = guideEls.node[bestN.port];
+            if (gEl) { gEl.classList.add("is-active"); gEl.setAttribute("r", "7.5"); }
+            lastSnappedLabel = `Pinned topic port to ${bestN.port.toUpperCase()}`;
+          }
+
+          const ports = resolveBranchPorts(parent, pDim, node, nDim, sheet.layout);
+          const p1 = getNodePortPoint(parent, pDim, ports.fromPort);
+          const p2 = getNodePortPoint(node, nDim, ports.toPort);
+          const newD = buildConnectorBezierPath(p1, p2);
+
+          if (pathEl) pathEl.setAttribute("d", newD);
+          if (hitEl) hitEl.setAttribute("d", newD);
+          if (fromH) { fromH.setAttribute("cx", p1.x); fromH.setAttribute("cy", p1.y); }
+          if (toH) { toH.setAttribute("cx", p2.x); toH.setAttribute("cy", p2.y); }
+        }
+
+        function onUp() {
+          window.removeEventListener("mousemove", onMove);
+          window.removeEventListener("mouseup", onUp);
+          portSnapGuidesGroup.innerHTML = "";
+
+          if (hasDragged) {
+            pushHistory();
+            render();
+            if (lastSnappedLabel) showToast(lastSnappedLabel);
+          } else {
+            render();
+          }
+        }
+
+        window.addEventListener("mousemove", onMove);
+        window.addEventListener("mouseup", onUp);
+      }
+
+      // =========================================================================
       // RENDER ENGINE: BOUNDARIES, CONNECTORS, RELATIONSHIPS & DOM NODES
       // =========================================================================
       function render() {
         const sheet = getActiveSheet();
         const { isVisible, nodeDimensions } = computeLayout() || { isVisible: new Set(sheet.nodes.map(n => n.id)), nodeDimensions: new Map() };
 
-        // 1. Render Boundaries (Under-layer group enclosures)
+        // Compute lineage ancestors if presenting (path illuminating back to central/home topic)
+        const lineageNodeIds = new Set();
+        if (state.isPresenting && state.selectedNodeId) {
+          let curr = sheet.nodes.find(n => n.id === state.selectedNodeId);
+          while (curr) {
+            lineageNodeIds.add(curr.id);
+            if (!curr.parentId) break;
+            curr = sheet.nodes.find(n => n.id === curr.parentId);
+          }
+        }
+
+        // 1. Render DOM Nodes first so live offsetWidth & offsetHeight are 100% exact for all 4 ports!
+        nodesLayer.innerHTML = "";
+        sheet.nodes.forEach(node => {
+          if (!isVisible.has(node.id)) return;
+
+          const isRoot = node.id === "root";
+          const isSelected = state.selectedNodeIds.has(node.id) || state.selectedNodeId === node.id;
+          const dims = nodeDimensions.get(node.id) || { w: 180, h: 50 };
+
+          const nodeEl = document.createElement("div");
+          nodeEl.className = `mind-node ${isRoot ? "is-root" : ""} ${isSelected ? "is-selected" : ""} shape-${node.shape || "card"}`;
+          nodeEl.id = `node-${node.id}`;
+
+          // Anchoring at exact center: left at node.x - dims.w / 2, top at node.y with translateY(-50%)
+          nodeEl.style.left = `${node.x - dims.w / 2}px`;
+          nodeEl.style.top = `${node.y}px`;
+          nodeEl.style.transform = `translateY(-50%)`;
+          nodeEl.style.width = `${dims.w}px`;
+
+          if (state.isPresenting) {
+            if (isSelected) {
+              nodeEl.classList.add("is-spotlight");
+            } else if (lineageNodeIds.has(node.id)) {
+              nodeEl.classList.add("is-lineage");
+            }
+          }
+
+          // Both color accent bar AND emoji badge coexist harmoniously
+          nodeEl.innerHTML = `
+            <div class="node-header">
+              <div class="node-accent-bar" style="background-color: ${node.color || '#6366f1'}"></div>
+              ${node.emoji ? `<span class="node-emoji-badge">${node.emoji}</span>` : ""}
+              <div class="node-title" data-node-id="${node.id}">${escapeHtml(node.text || "Untitled")}</div>
+            </div>
+            ${node.desc ? `<div class="node-desc" data-node-id="${node.id}">${escapeHtml(node.desc)}</div>` : (!state.isPresenting ? `<div class="node-add-subtext-btn" data-node-id="${node.id}">+ Add subtext</div>` : "")}
+            ${node.tags && node.tags.length > 0 ? `
+              <div class="node-tags-list">
+                ${node.tags.map(t => `<span class="node-tag">${escapeHtml(t)}</span>`).join("")}
+              </div>
+            ` : ""}
+          `;
+
+          // Fold/Unfold Button - Centered SVG & Hover-Reveal
+          const hasChildren = sheet.nodes.some(n => n.parentId === node.id);
+          if (hasChildren && !isRoot) {
+            const foldBtn = document.createElement("div");
+            let sideClass = node.side === "left" ? "left-side" : "right-side";
+            if (sheet.layout === "tree-down") sideClass = "bottom-side";
+
+            foldBtn.className = `node-fold-btn ${sideClass} ${node.collapsed ? "is-collapsed" : ""}`;
+            foldBtn.title = node.collapsed ? "Expand branch" : "Fold branch";
+
+            foldBtn.innerHTML = `
+              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:block; margin:auto;">
+                <line x1="3" y1="6" x2="9" y2="6"/>
+                ${node.collapsed ? '<line x1="6" y1="3" x2="6" y2="9"/>' : ''}
+              </svg>
+            `;
+
+            foldBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              node.collapsed = !node.collapsed;
+              pushHistory();
+              render();
+            });
+            nodeEl.appendChild(foldBtn);
+          }
+
+          // Branch Plus (+) Button - Micro Circle to intuitively spawn new subtopics
+          if (!state.isPresenting) {
+            const plusBtn = document.createElement("div");
+            let plusSideClass = node.side === "left" ? "left-side" : "right-side";
+            if (sheet.layout === "tree-down") plusSideClass = "bottom-side";
+
+            plusBtn.className = `node-add-branch-btn ${plusSideClass} ${hasChildren && !isRoot ? "has-fold" : ""}`;
+            plusBtn.title = "Add Subtopic (Tab)";
+            plusBtn.innerHTML = `
+              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
+                <line x1="5" y1="1.5" x2="5" y2="8.5"/>
+                <line x1="1.5" y1="5" x2="8.5" y2="5"/>
+              </svg>
+            `;
+
+            plusBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              addChildNode(node.id);
+            });
+            nodeEl.appendChild(plusBtn);
+          }
+
+          setupNodeInteractions(nodeEl, node);
+          nodesLayer.appendChild(nodeEl);
+
+          // Synchronize exact live DOM measurements so top/bottom/left/right ports align to the pixel
+          if (nodeEl.offsetWidth > 0 && nodeEl.offsetHeight > 0) {
+            nodeDimensions.set(node.id, { w: nodeEl.offsetWidth, h: nodeEl.offsetHeight });
+          }
+        });
+
+        // 2. Render Boundaries (Under-layer group enclosures)
         boundariesGroup.innerHTML = "";
         (sheet.boundaries || []).forEach(bnd => {
           const memberNodes = sheet.nodes.filter(n => bnd.nodeIds.includes(n.id) && isVisible.has(n.id));
@@ -2926,67 +3360,41 @@
           boundariesGroup.appendChild(g);
         });
 
-        // Compute lineage ancestors if presenting (path illuminating back to central/home topic)
-        const lineageNodeIds = new Set();
-        if (state.isPresenting && state.selectedNodeId) {
-          let curr = sheet.nodes.find(n => n.id === state.selectedNodeId);
-          while (curr) {
-            lineageNodeIds.add(curr.id);
-            if (!curr.parentId) break;
-            curr = sheet.nodes.find(n => n.id === curr.parentId);
-          }
-        }
-
-        // 2. Render Branch Connectors with organic tapering & exact vertical midpoint anchoring
+        // 3. Render Branch Connectors with Smart 4-Side Port Pinning & Draggable Endpoint Handles
         branchGroup.innerHTML = "";
+        connectorHandlesGroup.innerHTML = "";
+
         sheet.nodes.forEach(node => {
           if (!node.parentId || !isVisible.has(node.id) || !isVisible.has(node.parentId)) return;
           const parent = sheet.nodes.find(n => n.id === node.parentId);
           if (!parent) return;
 
-          const pDim = nodeDimensions.get(parent.id) || { w: 180, h: 50 };
-          const nDim = nodeDimensions.get(node.id) || { w: 180, h: 50 };
+          const pDim = nodeDimensions.get(parent.id) || { w: 180, h: 54 };
+          const nDim = nodeDimensions.get(node.id) || { w: 180, h: 54 };
 
-          let x1, y1, x2, y2;
-          const isVertical = sheet.layout === "tree-down";
+          const ports = resolveBranchPorts(parent, pDim, node, nDim, sheet.layout);
+          const p1 = getNodePortPoint(parent, pDim, ports.fromPort);
+          const p2 = getNodePortPoint(node, nDim, ports.toPort);
+          const pathD = buildConnectorBezierPath(p1, p2);
 
-          if (isVertical) {
-            x1 = parent.x;
-            y1 = parent.y + pDim.h / 2;
-            x2 = node.x;
-            y2 = node.y - nDim.h / 2;
-          } else {
-            if (node.x >= parent.x) {
-              x1 = parent.x + pDim.w / 2;
-              y1 = parent.y;
-              x2 = node.x - nDim.w / 2;
-              y2 = node.y;
-            } else {
-              x1 = parent.x - pDim.w / 2;
-              y1 = parent.y;
-              x2 = node.x + nDim.w / 2;
-              y2 = node.y;
-            }
-          }
+          const isConnSelected = state.selectedConnectorNodeId === node.id;
 
-          let pathD = "";
-          if (isVertical) {
-            const dy = (y2 - y1) * 0.55;
-            pathD = `M ${x1} ${y1} C ${x1} ${y1 + dy}, ${x2} ${y2 - dy}, ${x2} ${y2}`;
-          } else {
-            const dx = (x2 - x1) * 0.5;
-            pathD = `M ${x1} ${y1} C ${x1 + dx} ${y1}, ${x2 - dx} ${y2}, ${x2} ${y2}`;
-          }
+          // Wide transparent hit path for effortless hovering & dragging
+          const hitPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
+          hitPath.setAttribute("d", pathD);
+          hitPath.setAttribute("class", "connector-hit-path");
+          hitPath.setAttribute("id", `conn-hit-${node.id}`);
+          hitPath.setAttribute("title", "Drag line to pin to Top, Bottom, Left, or Right (Double-click to auto-reset)");
 
           const pathEl = document.createElementNS("http://www.w3.org/2000/svg", "path");
           pathEl.setAttribute("d", pathD);
-          pathEl.setAttribute("class", "connector-path");
+          pathEl.setAttribute("class", `connector-path ${isConnSelected ? "is-selected" : ""}`);
           pathEl.setAttribute("id", `conn-${node.id}`);
 
           const isDirectChild = parent.id === "root";
           const strokeWidth = isDirectChild ? "3.2px" : "2.2px";
           const strokeColor = node.color ? hexToRgba(node.color, isDirectChild ? 0.65 : 0.42) : "var(--connector-color)";
-          
+
           pathEl.style.stroke = strokeColor;
           pathEl.style.strokeWidth = strokeWidth;
 
@@ -3002,10 +3410,65 @@
             }
           }
 
+          branchGroup.appendChild(hitPath);
           branchGroup.appendChild(pathEl);
+
+          if (!state.isPresenting) {
+            const showHandlesInitially = isConnSelected || (sheet.layout === "freeform" && (state.selectedNodeId === node.id || state.selectedNodeId === parent.id));
+
+            const fromHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            fromHandle.setAttribute("id", `conn-from-handle-${node.id}`);
+            fromHandle.setAttribute("class", `connector-port-handle from-handle ${showHandlesInitially ? "is-visible" : ""}`);
+            fromHandle.setAttribute("cx", p1.x);
+            fromHandle.setAttribute("cy", p1.y);
+            fromHandle.setAttribute("r", "5.5");
+
+            const toHandle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+            toHandle.setAttribute("id", `conn-to-handle-${node.id}`);
+            toHandle.setAttribute("class", `connector-port-handle to-handle ${showHandlesInitially ? "is-visible" : ""}`);
+            toHandle.setAttribute("cx", p2.x);
+            toHandle.setAttribute("cy", p2.y);
+            toHandle.setAttribute("r", "5.5");
+
+            const showHover = () => {
+              pathEl.classList.add("is-hovered");
+              fromHandle.classList.add("is-visible");
+              toHandle.classList.add("is-visible");
+            };
+            const hideHover = () => {
+              pathEl.classList.remove("is-hovered");
+              if (!showHandlesInitially && state.selectedConnectorNodeId !== node.id) {
+                fromHandle.classList.remove("is-visible");
+                toHandle.classList.remove("is-visible");
+              }
+            };
+
+            const resetAutoPorts = (e) => {
+              e.stopPropagation();
+              node.fromPort = null;
+              node.toPort = null;
+              pushHistory();
+              render();
+              showToast("Connector reset to Auto-Nearest Port");
+            };
+
+            [hitPath, pathEl, fromHandle, toHandle].forEach(el => {
+              el.addEventListener("mouseenter", showHover);
+              el.addEventListener("mouseleave", hideHover);
+              el.addEventListener("dblclick", resetAutoPorts);
+            });
+
+            hitPath.addEventListener("mousedown", (e) => initConnectorPortDrag(e, node, parent, "auto"));
+            pathEl.addEventListener("mousedown", (e) => initConnectorPortDrag(e, node, parent, "auto"));
+            fromHandle.addEventListener("mousedown", (e) => initConnectorPortDrag(e, node, parent, "from"));
+            toHandle.addEventListener("mousedown", (e) => initConnectorPortDrag(e, node, parent, "to"));
+
+            connectorHandlesGroup.appendChild(fromHandle);
+            connectorHandlesGroup.appendChild(toHandle);
+          }
         });
 
-        // 3. Render Relationship Arrows (Floating, Draggable Labels with Leader Lines)
+        // 4. Render Relationship Arrows (Floating, Draggable Labels with Leader Lines)
         relGroup.innerHTML = "";
         (sheet.relationships || []).forEach(rel => {
           const fromNode = sheet.nodes.find(n => n.id === rel.fromId);
@@ -3135,101 +3598,6 @@
           });
 
           relGroup.appendChild(labelGroup);
-        });
-
-        // 4. Render DOM Nodes (Guaranteed exact 50% vertical center anchoring)
-        nodesLayer.innerHTML = "";
-        sheet.nodes.forEach(node => {
-          if (!isVisible.has(node.id)) return;
-
-          const isRoot = node.id === "root";
-          const isSelected = state.selectedNodeIds.has(node.id) || state.selectedNodeId === node.id;
-          const dims = nodeDimensions.get(node.id) || { w: 180, h: 50 };
-
-          const nodeEl = document.createElement("div");
-          nodeEl.className = `mind-node ${isRoot ? "is-root" : ""} ${isSelected ? "is-selected" : ""} shape-${node.shape || "card"}`;
-          nodeEl.id = `node-${node.id}`;
-
-          // Anchoring at exact center: left at node.x - dims.w / 2, top at node.y with translateY(-50%)
-          nodeEl.style.left = `${node.x - dims.w / 2}px`;
-          nodeEl.style.top = `${node.y}px`;
-          nodeEl.style.transform = `translateY(-50%)`;
-          nodeEl.style.width = `${dims.w}px`;
-
-          if (state.isPresenting) {
-            if (isSelected) {
-              nodeEl.classList.add("is-spotlight");
-            } else if (lineageNodeIds.has(node.id)) {
-              nodeEl.classList.add("is-lineage");
-            }
-          }
-
-          // Both color accent bar AND emoji badge coexist harmoniously
-          nodeEl.innerHTML = `
-            <div class="node-header">
-              <div class="node-accent-bar" style="background-color: ${node.color || '#6366f1'}"></div>
-              ${node.emoji ? `<span class="node-emoji-badge">${node.emoji}</span>` : ""}
-              <div class="node-title" data-node-id="${node.id}">${escapeHtml(node.text || "Untitled")}</div>
-            </div>
-            ${node.desc ? `<div class="node-desc" data-node-id="${node.id}">${escapeHtml(node.desc)}</div>` : (!state.isPresenting ? `<div class="node-add-subtext-btn" data-node-id="${node.id}">+ Add subtext</div>` : "")}
-            ${node.tags && node.tags.length > 0 ? `
-              <div class="node-tags-list">
-                ${node.tags.map(t => `<span class="node-tag">${escapeHtml(t)}</span>`).join("")}
-              </div>
-            ` : ""}
-          `;
-
-          // Fold/Unfold Button - Centered SVG & Hover-Reveal
-          const hasChildren = sheet.nodes.some(n => n.parentId === node.id);
-          if (hasChildren && !isRoot) {
-            const foldBtn = document.createElement("div");
-            let sideClass = node.side === "left" ? "left-side" : "right-side";
-            if (sheet.layout === "tree-down") sideClass = "bottom-side";
-
-            foldBtn.className = `node-fold-btn ${sideClass} ${node.collapsed ? "is-collapsed" : ""}`;
-            foldBtn.title = node.collapsed ? "Expand branch" : "Fold branch";
-
-            // Symmetrically centered SVG icon
-            foldBtn.innerHTML = `
-              <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" style="display:block; margin:auto;">
-                <line x1="3" y1="6" x2="9" y2="6"/>
-                ${node.collapsed ? '<line x1="6" y1="3" x2="6" y2="9"/>' : ''}
-              </svg>
-            `;
-
-            foldBtn.addEventListener("click", (e) => {
-              e.stopPropagation();
-              node.collapsed = !node.collapsed;
-              pushHistory();
-              render();
-            });
-            nodeEl.appendChild(foldBtn);
-          }
-
-          // Branch Plus (+) Button - Micro Circle to intuitively spawn new subtopics
-          if (!state.isPresenting) {
-            const plusBtn = document.createElement("div");
-            let plusSideClass = node.side === "left" ? "left-side" : "right-side";
-            if (sheet.layout === "tree-down") plusSideClass = "bottom-side";
-
-            plusBtn.className = `node-add-branch-btn ${plusSideClass} ${hasChildren && !isRoot ? "has-fold" : ""}`;
-            plusBtn.title = "Add Subtopic (Tab)";
-            plusBtn.innerHTML = `
-              <svg width="10" height="10" viewBox="0 0 10 10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round">
-                <line x1="5" y1="1.5" x2="5" y2="8.5"/>
-                <line x1="1.5" y1="5" x2="8.5" y2="5"/>
-              </svg>
-            `;
-
-            plusBtn.addEventListener("click", (e) => {
-              e.stopPropagation();
-              addChildNode(node.id);
-            });
-            nodeEl.appendChild(plusBtn);
-          }
-
-          setupNodeInteractions(nodeEl, node);
-          nodesLayer.appendChild(nodeEl);
         });
 
         updateInspectorBar();
@@ -3556,6 +3924,8 @@
             currentEl.style.left = `${node.x - (currentEl.offsetWidth || 180) / 2}px`;
             currentEl.style.top = `${node.y}px`;
             currentEl.style.transform = `translateY(-50%)`;
+            updateFreeformConnectorsLive();
+            updateMinimap();
             return;
           }
 
@@ -3721,6 +4091,7 @@
             state.selectedNodeIds.clear();
             state.selectedRelId = null;
             state.selectedBoundaryId = null;
+            state.selectedConnectorNodeId = null;
             render();
 
             isMarquee = true;
@@ -5196,7 +5567,7 @@
         });
 
         // Draw Branch Connectors
-        branchGroup.querySelectorAll("path").forEach(p => {
+        branchGroup.querySelectorAll("path.connector-path").forEach(p => {
           const d = p.getAttribute("d");
           ctx.save();
           ctx.lineWidth = parseFloat(p.style.strokeWidth || 2.4);
@@ -5344,7 +5715,7 @@
 
         svgContent += `<rect class="bg" x="${minX - pad}" y="${minY - pad}" width="${width}" height="${height}" />\n`;
 
-        branchGroup.querySelectorAll("path").forEach(p => {
+        branchGroup.querySelectorAll("path.connector-path").forEach(p => {
           svgContent += `<path class="conn" d="${p.getAttribute('d')}" />\n`;
         });
 
