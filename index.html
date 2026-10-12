@@ -581,6 +581,67 @@
       border: 1px solid var(--border-subtle);
     }
 
+    /* Uploaded Node Image Attachment */
+    .node-image-wrap {
+      position: relative;
+      z-index: 2;
+      width: 100%;
+      border-radius: 9px;
+      overflow: hidden;
+      margin-top: 2px;
+      border: 1px solid var(--border-subtle);
+      background: rgba(0, 0, 0, 0.16);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .node-image-el {
+      display: block;
+      width: 100%;
+      max-width: 260px;
+      max-height: 180px;
+      object-fit: cover;
+      border-radius: 8px;
+      user-select: none;
+      -webkit-user-drag: none;
+    }
+
+    .mind-node[style*="width:"] .node-image-el {
+      max-width: 100%;
+    }
+
+    .node-image-remove-btn {
+      position: absolute;
+      top: 6px;
+      right: 6px;
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: rgba(15, 23, 42, 0.85);
+      border: 1px solid rgba(255, 255, 255, 0.25);
+      color: #ffffff;
+      font-size: 0.85rem;
+      line-height: 1;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      opacity: 0;
+      transition: opacity 0.15s ease, background 0.15s ease, transform 0.15s ease;
+      z-index: 6;
+    }
+
+    .mind-node:hover .node-image-remove-btn {
+      opacity: 1;
+    }
+
+    .node-image-remove-btn:hover {
+      background: #f43f5e;
+      border-color: #f43f5e;
+      transform: scale(1.1);
+    }
+
     /* Seamless Hover Bridge so moving cursor from card to Fold or Plus (+) button never drops :hover */
     .mind-node:hover::after {
       content: "";
@@ -1932,7 +1993,9 @@
     }
 
     #node-details-modal .modal-box {
-      width: 460px;
+      width: 500px;
+      max-height: 90vh;
+      overflow-y: auto;
     }
 
     #boundary-settings-modal .modal-box {
@@ -1995,34 +2058,41 @@
 
     .form-textarea {
       resize: vertical;
-      min-height: 80px;
+      min-height: 74px;
       line-height: 1.45;
     }
 
     .emoji-row {
       display: flex;
-      gap: 8px;
+      gap: 5px;
       flex-wrap: wrap;
+      max-height: 112px;
+      overflow-y: auto;
+      padding: 6px;
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--border-subtle);
+      border-radius: 10px;
     }
 
     .emoji-choice-btn {
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid var(--border-subtle);
       border-radius: 8px;
-      font-size: 1.15rem;
-      padding: 6px 10px;
+      font-size: 1.08rem;
+      padding: 4px 8px;
       cursor: pointer;
-      transition: transform 0.15s ease, background 0.15s ease;
+      transition: transform 0.12s ease, background 0.12s ease;
     }
 
     .emoji-choice-btn:hover {
       background: var(--bg-hover);
-      transform: scale(1.15);
+      transform: scale(1.12);
     }
 
     .emoji-choice-btn.is-active {
       background: var(--accent);
       border-color: var(--accent);
+      color: #ffffff;
     }
 
     #toast-msg {
@@ -2400,6 +2470,9 @@
       <div class="ctx-item" id="ctx-edit-details">
         <span>Edit Details & Notes</span>
       </div>
+      <div class="ctx-item" id="ctx-upload-image">
+        <span>Add / Change Image...</span>
+      </div>
       <div class="ctx-item" id="ctx-duplicate">
         <span>Duplicate Branch</span>
         <span class="kbd-badge">Ctrl+D</span>
@@ -2463,7 +2536,13 @@
         <span>Boundary</span>
       </button>
 
-      <button class="ui-btn" id="inspector-btn-edit-details" title="Edit Note, Emoji & Tags">
+      <button class="ui-btn" id="inspector-btn-image" title="Upload Image to Topic (or Paste Ctrl+V)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+        <span>Image</span>
+      </button>
+      <input type="file" id="node-image-upload-input" accept="image/*" style="display:none;" />
+
+      <button class="ui-btn" id="inspector-btn-edit-details" title="Edit Note, Emoji, Image & Tags">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
         <span>Details</span>
       </button>
@@ -2578,12 +2657,18 @@
     <div class="modal-overlay" id="node-details-modal">
       <div class="modal-box">
         <div class="modal-title">
-          <span>Topic Details & Lecture Notes</span>
+          <span>Topic Details, Media &amp; Notes</span>
           <button class="modal-close-btn" id="btn-close-details">&times;</button>
         </div>
 
         <div class="form-group">
-          <label class="form-label">Icon / Emoji Badge</label>
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label class="form-label" style="margin-bottom:0;">Icon / Emoji Badge</label>
+            <div style="display:flex; align-items:center; gap:6px;">
+              <input type="text" id="input-custom-emoji" class="form-input" placeholder="Any device emoji..." title="Type or paste any emoji from your device (Press Win + . on Windows or Cmd + Ctrl + Space on Mac)" style="width:140px; padding:4px 8px; font-size:0.82rem; height:28px;" />
+              <button type="button" class="ui-btn" id="btn-trigger-os-emoji" title="Focus box &amp; press Win + . (Windows) or Cmd + Ctrl + Space (Mac) to open your device's full emoji keyboard" style="padding:3px 8px; font-size:0.72rem; height:28px; border:1px solid var(--border-strong);">😊 Device Emoji (Win+.)</button>
+            </div>
+          </div>
           <div class="emoji-row" id="emoji-picker-row">
             <button class="emoji-choice-btn" data-emoji="">None</button>
             <button class="emoji-choice-btn" data-emoji="⚡">⚡</button>
@@ -2595,6 +2680,69 @@
             <button class="emoji-choice-btn" data-emoji="🧠">🧠</button>
             <button class="emoji-choice-btn" data-emoji="🔍">🔍</button>
             <button class="emoji-choice-btn" data-emoji="📊">📊</button>
+            <button class="emoji-choice-btn" data-emoji="📈">📈</button>
+            <button class="emoji-choice-btn" data-emoji="📉">📉</button>
+            <button class="emoji-choice-btn" data-emoji="🔥">🔥</button>
+            <button class="emoji-choice-btn" data-emoji="⭐">⭐</button>
+            <button class="emoji-choice-btn" data-emoji="✨">✨</button>
+            <button class="emoji-choice-btn" data-emoji="✅">✅</button>
+            <button class="emoji-choice-btn" data-emoji="❌">❌</button>
+            <button class="emoji-choice-btn" data-emoji="❓">❓</button>
+            <button class="emoji-choice-btn" data-emoji="💬">💬</button>
+            <button class="emoji-choice-btn" data-emoji="📝">📝</button>
+            <button class="emoji-choice-btn" data-emoji="📚">📚</button>
+            <button class="emoji-choice-btn" data-emoji="🎓">🎓</button>
+            <button class="emoji-choice-btn" data-emoji="🏋️">🏋️</button>
+            <button class="emoji-choice-btn" data-emoji="💪">💪</button>
+            <button class="emoji-choice-btn" data-emoji="🏃">🏃</button>
+            <button class="emoji-choice-btn" data-emoji="🥗">🥗</button>
+            <button class="emoji-choice-btn" data-emoji="⏱️">⏱️</button>
+            <button class="emoji-choice-btn" data-emoji="📅">📅</button>
+            <button class="emoji-choice-btn" data-emoji="🏆">🏆</button>
+            <button class="emoji-choice-btn" data-emoji="🥇">🥇</button>
+            <button class="emoji-choice-btn" data-emoji="💻">💻</button>
+            <button class="emoji-choice-btn" data-emoji="📱">📱</button>
+            <button class="emoji-choice-btn" data-emoji="🖥️">🖥️</button>
+            <button class="emoji-choice-btn" data-emoji="⚙️">⚙️</button>
+            <button class="emoji-choice-btn" data-emoji="🔧">🔧</button>
+            <button class="emoji-choice-btn" data-emoji="🛠️">🛠️</button>
+            <button class="emoji-choice-btn" data-emoji="🧪">🧪</button>
+            <button class="emoji-choice-btn" data-emoji="🔬">🔬</button>
+            <button class="emoji-choice-btn" data-emoji="🧬">🧬</button>
+            <button class="emoji-choice-btn" data-emoji="🎨">🎨</button>
+            <button class="emoji-choice-btn" data-emoji="🎬">🎬</button>
+            <button class="emoji-choice-btn" data-emoji="🎧">🎧</button>
+            <button class="emoji-choice-btn" data-emoji="📷">📷</button>
+            <button class="emoji-choice-btn" data-emoji="🌐">🌐</button>
+            <button class="emoji-choice-btn" data-emoji="🔒">🔒</button>
+            <button class="emoji-choice-btn" data-emoji="🔑">🔑</button>
+            <button class="emoji-choice-btn" data-emoji="🛡️">🛡️</button>
+            <button class="emoji-choice-btn" data-emoji="💰">💰</button>
+            <button class="emoji-choice-btn" data-emoji="💎">💎</button>
+            <button class="emoji-choice-btn" data-emoji="🏷️">🏷️</button>
+            <button class="emoji-choice-btn" data-emoji="📦">📦</button>
+            <button class="emoji-choice-btn" data-emoji="🗂️">🗂️</button>
+            <button class="emoji-choice-btn" data-emoji="📋">📋</button>
+            <button class="emoji-choice-btn" data-emoji="🧭">🧭</button>
+            <button class="emoji-choice-btn" data-emoji="🗺️">🗺️</button>
+            <button class="emoji-choice-btn" data-emoji="❤️">❤️</button>
+            <button class="emoji-choice-btn" data-emoji="🌱">🌱</button>
+            <button class="emoji-choice-btn" data-emoji="🌍">🌍</button>
+            <button class="emoji-choice-btn" data-emoji="☀️">☀️</button>
+            <button class="emoji-choice-btn" data-emoji="🌙">🌙</button>
+          </div>
+        </div>
+
+        <div class="form-group">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <label class="form-label" style="margin-bottom:0;">Topic Image (Upload, Drag &amp; Drop, or Paste Ctrl+V)</label>
+            <div style="display:flex; gap:6px;">
+              <button type="button" class="ui-btn" id="btn-details-upload-image" style="padding:4px 10px; font-size:0.75rem; border:1px solid var(--border-strong);">🖼️ Upload Image...</button>
+              <button type="button" class="ui-btn danger" id="btn-details-remove-image" style="display:none; padding:4px 10px; font-size:0.75rem; color:#f43f5e; border:1px solid rgba(244,63,94,0.3);">Remove</button>
+            </div>
+          </div>
+          <div id="details-image-preview-wrap" style="display:none; margin-top:4px; border-radius:10px; overflow:hidden; border:1px solid var(--border-strong); background:rgba(0,0,0,0.2); max-height:150px; align-items:center; justify-content:center;">
+            <img id="details-image-preview" src="" alt="Topic preview" style="max-width:100%; max-height:146px; object-fit:contain; display:block;" />
           </div>
         </div>
 
@@ -2649,7 +2797,10 @@
 
           <!-- Icon / Emoji Picker -->
           <div class="form-group">
-            <label class="form-label">Badge Icon / Emoji</label>
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+              <label class="form-label" style="margin-bottom:0;">Badge Icon / Emoji</label>
+              <input type="text" id="bnd-custom-emoji" class="form-input" placeholder="Any device emoji (Win+.)" title="Type or paste any emoji from your device (Win + . or Cmd + Ctrl + Space)" style="width:175px; padding:4px 8px; font-size:0.8rem; height:28px;" />
+            </div>
             <div class="emoji-row" id="bnd-emoji-picker-row">
               <button class="emoji-choice-btn" data-bnd-emoji="">None</button>
               <button class="emoji-choice-btn" data-bnd-emoji="🏷️">🏷️</button>
@@ -2662,6 +2813,25 @@
               <button class="emoji-choice-btn" data-bnd-emoji="📐">📐</button>
               <button class="emoji-choice-btn" data-bnd-emoji="⚙️">⚙️</button>
               <button class="emoji-choice-btn" data-bnd-emoji="🧠">🧠</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="🔥">🔥</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="⚡">⚡</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="📊">📊</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="📈">📈</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="🏋️">🏋️</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="💪">💪</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="🏆">🏆</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="📚">📚</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="🎓">🎓</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="💻">💻</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="🔬">🔬</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="🎨">🎨</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="🗂️">🗂️</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="📌">📌</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="✅">✅</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="⚠️">⚠️</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="🔒">🔒</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="💎">💎</button>
+              <button class="emoji-choice-btn" data-bnd-emoji="🌍">🌍</button>
             </div>
           </div>
 
@@ -3872,8 +4042,26 @@
             }
           }
 
+          // Compute image inline style if node.image is attached
+          let imageHtml = "";
+          if (node.image) {
+            const dispW = (node.customWidth && Number.isFinite(node.customWidth))
+              ? Math.max(60, Math.round(node.customWidth) - 24)
+              : Math.min(260, Math.max(120, node.imageW || 220));
+            const ratioH = (node.imageW && node.imageH)
+              ? Math.min(180, Math.round(dispW * (node.imageH / node.imageW)))
+              : 130;
+            imageHtml = `
+              <div class="node-image-wrap">
+                <img class="node-image-el" src="${node.image}" alt="${escapeHtml(node.text || 'Topic image')}" style="width:${dispW}px; height:${ratioH}px; object-fit:cover;" />
+                ${!state.isPresenting ? `<button type="button" class="node-image-remove-btn" data-remove-img-id="${node.id}" title="Remove image">&times;</button>` : ""}
+              </div>
+            `;
+          }
+
           // Both color accent bar AND emoji badge coexist harmoniously
           nodeEl.innerHTML = `
+            ${imageHtml}
             <div class="node-header">
               <div class="node-accent-bar" style="background-color: ${node.color || '#6366f1'}"></div>
               ${node.emoji ? `<span class="node-emoji-badge">${node.emoji}</span>` : ""}
@@ -3886,6 +4074,20 @@
               </div>
             ` : ""}
           `;
+
+          const removeImgBtn = nodeEl.querySelector(".node-image-remove-btn");
+          if (removeImgBtn) {
+            removeImgBtn.addEventListener("mousedown", (e) => e.stopPropagation());
+            removeImgBtn.addEventListener("click", (e) => {
+              e.stopPropagation();
+              delete node.image;
+              delete node.imageW;
+              delete node.imageH;
+              pushHistory();
+              render();
+              showToast("Image Removed");
+            });
+          }
 
           // Left & Right Horizontal Resize Handles (Drag to resize width, Double-click to reset to default)
           if (!state.isPresenting) {
@@ -5335,9 +5537,16 @@
         document.getElementById("bnd-modal-icon-badge").textContent = bnd.icon || "🏷️";
 
         // Emoji buttons
+        let matchedBndEmoji = false;
         document.querySelectorAll("#bnd-emoji-picker-row .emoji-choice-btn").forEach(btn => {
-          btn.classList.toggle("is-active", btn.dataset.bndEmoji === (bnd.icon || ""));
+          const isMatch = btn.dataset.bndEmoji === (bnd.icon || "");
+          if (isMatch) matchedBndEmoji = true;
+          btn.classList.toggle("is-active", isMatch);
         });
+        const bndCustomEmojiInput = document.getElementById("bnd-custom-emoji");
+        if (bndCustomEmojiInput) {
+          bndCustomEmojiInput.value = bnd.icon || "";
+        }
 
         // Color swatches
         document.querySelectorAll("#bnd-swatch-list .color-swatch").forEach(swatch => {
@@ -5943,6 +6152,86 @@
       // =========================================================================
       // IN-PLACE TOPIC DETAILS & NOTES MODAL
       // =========================================================================
+      function syncDetailsImagePreview(node) {
+        const wrap = document.getElementById("details-image-preview-wrap");
+        const img = document.getElementById("details-image-preview");
+        const rmBtn = document.getElementById("btn-details-remove-image");
+        if (!wrap || !img || !rmBtn) return;
+        if (node && node.image) {
+          img.src = node.image;
+          wrap.style.display = "flex";
+          rmBtn.style.display = "inline-flex";
+        } else {
+          img.src = "";
+          wrap.style.display = "none";
+          rmBtn.style.display = "none";
+        }
+      }
+
+      function processAndAttachImageFile(file) {
+        if (!file || !file.type.startsWith("image/")) {
+          showToast("Please select a valid image file");
+          return;
+        }
+        const sheet = getActiveSheet();
+        const targets = state.selectedNodeIds.size > 0
+          ? sheet.nodes.filter(n => state.selectedNodeIds.has(n.id))
+          : sheet.nodes.filter(n => n.id === state.selectedNodeId);
+        if (targets.length === 0) {
+          showToast("Select a topic first to attach an image");
+          return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          const dataUrl = ev.target?.result;
+          if (!dataUrl) return;
+          const imgObj = new Image();
+          imgObj.onload = () => {
+            const maxDim = 840;
+            let w = imgObj.naturalWidth || 300;
+            let h = imgObj.naturalHeight || 200;
+            if (w > maxDim || h > maxDim) {
+              const scale = maxDim / Math.max(w, h);
+              w = Math.round(w * scale);
+              h = Math.round(h * scale);
+            }
+            const canvas = document.createElement("canvas");
+            canvas.width = w;
+            canvas.height = h;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(imgObj, 0, 0, w, h);
+            const mime = file.type === "image/png" || file.type === "image/svg+xml" ? "image/png" : "image/webp";
+            let finalUrl = dataUrl;
+            try {
+              finalUrl = canvas.toDataURL(mime, 0.88);
+            } catch (err) {
+              finalUrl = dataUrl;
+            }
+            targets.forEach(n => {
+              n.image = finalUrl;
+              n.imageW = w;
+              n.imageH = h;
+            });
+            const activeNode = sheet.nodes.find(n => n.id === state.selectedNodeId) || targets[0];
+            syncDetailsImagePreview(activeNode);
+            pushHistory();
+            render();
+            showToast(targets.length > 1 ? `Image attached to ${targets.length} topics` : "Image Uploaded to Topic");
+          };
+          imgObj.src = dataUrl;
+        };
+        reader.readAsDataURL(file);
+      }
+
+      function triggerNodeImageUpload() {
+        const inputEl = document.getElementById("node-image-upload-input");
+        if (inputEl) {
+          inputEl.value = "";
+          inputEl.click();
+        }
+      }
+
       function openDetailsModal(specifiedNodeId) {
         if (specifiedNodeId && typeof specifiedNodeId === "string") {
           state.selectedNodeId = specifiedNodeId;
@@ -5956,9 +6245,18 @@
         document.getElementById("input-node-desc").value = node.desc || "";
         document.getElementById("input-node-tags").value = (node.tags || []).join(", ");
 
-        document.querySelectorAll(".emoji-choice-btn").forEach(btn => {
-          btn.classList.toggle("is-active", btn.dataset.emoji === (node.emoji || ""));
+        let matchedEmojiPreset = false;
+        document.querySelectorAll("#emoji-picker-row .emoji-choice-btn").forEach(btn => {
+          const isMatch = btn.dataset.emoji === (node.emoji || "");
+          if (isMatch) matchedEmojiPreset = true;
+          btn.classList.toggle("is-active", isMatch);
         });
+        const customEmojiInput = document.getElementById("input-custom-emoji");
+        if (customEmojiInput) {
+          customEmojiInput.value = node.emoji || "";
+        }
+
+        syncDetailsImagePreview(node);
 
         const curShape = node.shape || "card";
         document.querySelectorAll("#details-shape-btn-group [data-shape]").forEach(btn => {
@@ -5968,11 +6266,49 @@
         detailsModal.classList.add("is-open");
       }
 
-      document.querySelectorAll(".emoji-choice-btn").forEach(btn => {
+      document.querySelectorAll("#emoji-picker-row .emoji-choice-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-          document.querySelectorAll(".emoji-choice-btn").forEach(b => b.classList.remove("is-active"));
+          document.querySelectorAll("#emoji-picker-row .emoji-choice-btn").forEach(b => b.classList.remove("is-active"));
           btn.classList.add("is-active");
+          const customEmojiInput = document.getElementById("input-custom-emoji");
+          if (customEmojiInput) {
+            customEmojiInput.value = btn.dataset.emoji || "";
+          }
         });
+      });
+
+      document.getElementById("input-custom-emoji")?.addEventListener("input", (e) => {
+        const val = e.target.value.trim();
+        document.querySelectorAll("#emoji-picker-row .emoji-choice-btn").forEach(b => {
+          b.classList.toggle("is-active", b.dataset.emoji === val);
+        });
+      });
+
+      document.getElementById("btn-trigger-os-emoji")?.addEventListener("click", () => {
+        const customEmojiInput = document.getElementById("input-custom-emoji");
+        if (customEmojiInput) {
+          customEmojiInput.focus();
+          customEmojiInput.select();
+        }
+        showToast("Press Win + . (Windows) or Cmd + Ctrl + Space (Mac) to pick any device emoji");
+      });
+
+      document.getElementById("btn-details-upload-image")?.addEventListener("click", () => {
+        triggerNodeImageUpload();
+      });
+
+      document.getElementById("btn-details-remove-image")?.addEventListener("click", () => {
+        const sheet = getActiveSheet();
+        const node = sheet.nodes.find(n => n.id === state.selectedNodeId);
+        if (node) {
+          delete node.image;
+          delete node.imageW;
+          delete node.imageH;
+          syncDetailsImagePreview(node);
+          pushHistory();
+          render();
+          showToast("Image Removed");
+        }
       });
 
       document.getElementById("btn-save-details").addEventListener("click", () => {
@@ -5983,8 +6319,9 @@
           const tagsStr = document.getElementById("input-node-tags").value;
           node.tags = tagsStr ? tagsStr.split(",").map(t => t.trim()).filter(Boolean) : [];
 
-          const activeEmojiBtn = document.querySelector(".emoji-choice-btn.is-active");
-          node.emoji = activeEmojiBtn ? activeEmojiBtn.dataset.emoji : "";
+          const customEmojiVal = document.getElementById("input-custom-emoji")?.value.trim();
+          const activeEmojiBtn = document.querySelector("#emoji-picker-row .emoji-choice-btn.is-active");
+          node.emoji = customEmojiVal !== undefined ? customEmojiVal : (activeEmojiBtn ? activeEmojiBtn.dataset.emoji : "");
 
           pushHistory();
           render();
@@ -6203,6 +6540,8 @@
           if (shapeGroupEl) shapeGroupEl.style.display = "none";
           if (shapeDividerEl) shapeDividerEl.style.display = "none";
           document.getElementById("inspector-btn-boundary").style.display = "none";
+          const imgBtn = document.getElementById("inspector-btn-image");
+          if (imgBtn) imgBtn.style.display = "none";
           document.getElementById("inspector-btn-edit-details").style.display = "none";
           document.getElementById("inspector-btn-toggle-fold").style.display = "none";
           document.getElementById("inspector-btn-duplicate").style.display = "none";
@@ -6219,6 +6558,8 @@
         if (shapeGroupEl) shapeGroupEl.style.display = "flex";
         if (shapeDividerEl) shapeDividerEl.style.display = "block";
         document.getElementById("inspector-btn-boundary").style.display = "flex";
+        const imgBtn = document.getElementById("inspector-btn-image");
+        if (imgBtn) imgBtn.style.display = "flex";
         document.getElementById("inspector-btn-edit-details").style.display = "flex";
         document.getElementById("inspector-btn-toggle-fold").style.display = "flex";
         document.getElementById("inspector-btn-duplicate").style.display = "flex";
@@ -6313,9 +6654,20 @@
       }
 
       document.getElementById("inspector-btn-boundary").addEventListener("click", createBoundaryForSelected);
+      document.getElementById("inspector-btn-image")?.addEventListener("click", () => triggerNodeImageUpload());
       document.getElementById("inspector-btn-edit-details").addEventListener("click", openDetailsModal);
       document.getElementById("inspector-btn-duplicate").addEventListener("click", duplicateSelectedBranch);
       document.getElementById("inspector-btn-delete").addEventListener("click", deleteSelection);
+
+      const nodeImageUploadInput = document.getElementById("node-image-upload-input");
+      if (nodeImageUploadInput) {
+        nodeImageUploadInput.addEventListener("change", (e) => {
+          if (e.target.files && e.target.files[0]) {
+            processAndAttachImageFile(e.target.files[0]);
+            e.target.value = "";
+          }
+        });
+      }
 
       const bndSettingsBtn = document.getElementById("inspector-btn-bnd-settings");
       if (bndSettingsBtn) {
@@ -6338,6 +6690,10 @@
         });
       }
       document.getElementById("ctx-edit-details").addEventListener("click", openDetailsModal);
+      document.getElementById("ctx-upload-image")?.addEventListener("click", () => {
+        closeContextMenu();
+        triggerNodeImageUpload();
+      });
       document.getElementById("ctx-duplicate").addEventListener("click", duplicateSelectedBranch);
       document.getElementById("ctx-fold").addEventListener("click", toggleFoldForSelection);
       document.getElementById("ctx-flip-side")?.addEventListener("click", () => {
@@ -6355,7 +6711,30 @@
           document.querySelectorAll("#bnd-emoji-picker-row .emoji-choice-btn").forEach(b => b.classList.remove("is-active"));
           btn.classList.add("is-active");
           document.getElementById("bnd-modal-icon-badge").textContent = btn.dataset.bndEmoji || "🏷️";
+          const bndCustomEmojiInput = document.getElementById("bnd-custom-emoji");
+          if (bndCustomEmojiInput) bndCustomEmojiInput.value = btn.dataset.bndEmoji || "";
         });
+      });
+
+      const bndCustomEmojiEl = document.getElementById("bnd-custom-emoji");
+      if (bndCustomEmojiEl) {
+        bndCustomEmojiEl.addEventListener("input", () => {
+          const val = bndCustomEmojiEl.value.trim();
+          document.getElementById("bnd-modal-icon-badge").textContent = val || "🏷️";
+          document.querySelectorAll("#bnd-emoji-picker-row .emoji-choice-btn").forEach(b => {
+            b.classList.toggle("is-active", b.dataset.bndEmoji === val);
+          });
+        });
+      }
+
+      document.getElementById("btn-trigger-bnd-os-emoji")?.addEventListener("click", () => {
+        const input = document.getElementById("bnd-custom-emoji");
+        if (input) {
+          input.focus();
+          input.select();
+        }
+        const isMac = /Mac|iPod|iPhone|iPad/.test(navigator.platform);
+        showToast(isMac ? "Press Cmd + Ctrl + Space for System Emoji Picker" : "Press Win + . (Period) for Windows Emoji Picker");
       });
 
       document.querySelectorAll("#bnd-swatch-list .color-swatch").forEach(swatch => {
@@ -6422,8 +6801,9 @@
         if (!bnd) return;
 
         const title = document.getElementById("bnd-input-title").value.trim();
+        const customEmojiVal = document.getElementById("bnd-custom-emoji") ? document.getElementById("bnd-custom-emoji").value.trim() : "";
         const activeEmojiBtn = document.querySelector("#bnd-emoji-picker-row .emoji-choice-btn.is-active");
-        const icon = activeEmojiBtn ? activeEmojiBtn.dataset.bndEmoji : (bnd.icon || "");
+        const icon = customEmojiVal !== "" ? customEmojiVal : (activeEmojiBtn ? activeEmojiBtn.dataset.bndEmoji : "");
 
         const activeSwatch = document.querySelector("#bnd-swatch-list .color-swatch.is-selected");
         const customColor = document.getElementById("bnd-custom-color").value;
@@ -7516,7 +7896,7 @@
         if (e.target === shortcutsModal) shortcutsModal.classList.remove("is-open");
       });
 
-      // Drag and Drop .json file onto canvas
+      // Drag and Drop .json or Image file onto canvas / topics
       window.addEventListener("dragover", (e) => e.preventDefault());
       window.addEventListener("drop", (e) => {
         e.preventDefault();
@@ -7524,6 +7904,37 @@
           const file = e.dataTransfer.files[0];
           if (file.name.endsWith(".json")) {
             loadProjectJson(file);
+          } else if (file.type && file.type.startsWith("image/")) {
+            const hoveredNodeEl = e.target && e.target.closest ? e.target.closest(".mind-node") : null;
+            if (hoveredNodeEl && hoveredNodeEl.dataset.id) {
+              state.selectedNodeId = hoveredNodeEl.dataset.id;
+              state.selectedNodeIds.clear();
+              state.selectedNodeIds.add(hoveredNodeEl.dataset.id);
+            } else if (!state.selectedNodeId && state.selectedNodeIds.size === 0) {
+              state.selectedNodeId = "root";
+              state.selectedNodeIds.add("root");
+            }
+            processAndAttachImageFile(file);
+          }
+        }
+      });
+
+      // Paste image from clipboard onto selected topic
+      window.addEventListener("paste", (e) => {
+        const items = e.clipboardData && e.clipboardData.items;
+        if (!items) return;
+        for (let i = 0; i < items.length; i++) {
+          if (items[i].type && items[i].type.startsWith("image/")) {
+            const file = items[i].getAsFile();
+            if (file) {
+              e.preventDefault();
+              if (!state.selectedNodeId && state.selectedNodeIds.size === 0) {
+                state.selectedNodeId = "root";
+                state.selectedNodeIds.add("root");
+              }
+              processAndAttachImageFile(file);
+              break;
+            }
           }
         }
       });
