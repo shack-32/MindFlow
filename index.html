@@ -2119,6 +2119,156 @@
       to { opacity: 1; transform: translateY(0); }
     }
 
+    /* Spell Check & Proofread Styles */
+    .spell-error-word {
+      text-decoration: underline wavy #f43f5e;
+      text-decoration-thickness: 1.5px;
+      text-underline-offset: 3px;
+      background: rgba(244, 63, 94, 0.08);
+      border-radius: 3px;
+    }
+
+    body.is-presenting .spell-error-word,
+    body.is-clean-mode .spell-error-word {
+      text-decoration: none !important;
+      background: transparent !important;
+    }
+
+    .spellcheck-badge-count {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 17px;
+      height: 17px;
+      padding: 0 5px;
+      border-radius: 999px;
+      background: #f43f5e;
+      color: #ffffff;
+      font-size: 0.68rem;
+      font-weight: 700;
+      font-family: var(--font-mono);
+      line-height: 1;
+    }
+
+    .spellcheck-badge-count.is-zero {
+      background: rgba(16, 185, 129, 0.18);
+      color: #10b981;
+    }
+
+    .spellcheck-issue-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      max-height: 360px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .spellcheck-issue-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-strong);
+      border-radius: 12px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      transition: border-color 0.15s ease;
+    }
+
+    .spellcheck-issue-card:hover {
+      border-color: var(--accent);
+    }
+
+    .spellcheck-issue-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 8px;
+    }
+
+    .spellcheck-topic-link {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      color: var(--text-main);
+      cursor: pointer;
+      background: rgba(255, 255, 255, 0.05);
+      padding: 3px 8px;
+      border-radius: 6px;
+      border: 1px solid var(--border-subtle);
+    }
+
+    .spellcheck-topic-link:hover {
+      border-color: var(--accent);
+      color: var(--accent);
+    }
+
+    .spellcheck-field-badge {
+      font-size: 0.68rem;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.04em;
+      padding: 2px 7px;
+      border-radius: 5px;
+      background: rgba(99, 102, 241, 0.15);
+      color: var(--accent);
+    }
+
+    .spellcheck-context-line {
+      font-size: 0.84rem;
+      color: var(--text-muted);
+      background: rgba(0, 0, 0, 0.18);
+      padding: 7px 10px;
+      border-radius: 8px;
+      line-height: 1.45;
+      word-break: break-word;
+    }
+
+    .spellcheck-context-line mark.spell-bad {
+      background: rgba(244, 63, 94, 0.22);
+      color: #fda4af;
+      font-weight: 700;
+      padding: 1px 5px;
+      border-radius: 4px;
+      text-decoration: underline wavy #f43f5e;
+    }
+
+    .spellcheck-suggestions-row {
+      display: flex;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .spell-suggestion-chip {
+      background: rgba(16, 185, 129, 0.14);
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      color: #34d399;
+      font-size: 0.78rem;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 999px;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+
+    .spell-suggestion-chip:hover {
+      background: #10b981;
+      color: #052e16;
+      transform: translateY(-1px);
+    }
+
+    .spellcheck-actions-row {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 6px;
+      padding-top: 4px;
+      border-top: 1px solid var(--border-subtle);
+    }
+
     #file-import-input { display: none; }
   </style>
 </head>
@@ -2237,6 +2387,10 @@
           <div class="dropdown-item" id="btn-search-trigger">
             <span>Spotlight Search</span>
             <span class="dropdown-shortcut">Ctrl+F</span>
+          </div>
+          <div class="dropdown-item" id="btn-spellcheck-menu">
+            <span>Spell Check &amp; Proofread</span>
+            <span class="dropdown-shortcut">F7</span>
           </div>
         </div>
       </div>
@@ -2393,6 +2547,13 @@
           </div>
         </div>
       </div>
+
+      <!-- Spell Check Button -->
+      <button class="ui-btn" id="btn-spellcheck-toolbar" title="Spell Check &amp; Proofread Map (F7)">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 16l4.5-11 4.5 11M5.5 12h6M15 16l2.5 2.5L22 14"/></svg>
+        <span class="menu-text-label">Spell Check</span>
+        <span id="spellcheck-toolbar-badge" class="spellcheck-badge-count" style="display:none;">0</span>
+      </button>
 
       <!-- Export Dropdown Menu (on the right) -->
       <div class="dropdown-container">
@@ -3000,6 +3161,52 @@
       </div>
     </div>
 
+    <!-- Spell Check & Proofread Studio Modal -->
+    <div class="modal-overlay" id="spellcheck-modal">
+      <div class="modal-box" style="max-width:540px;">
+        <div class="modal-title">
+          <div style="display:flex; align-items:center; gap:8px;">
+            <span style="font-size:1.1rem; background:rgba(99,102,241,0.18); color:var(--accent); padding:4px 8px; border-radius:8px; font-weight:700; font-family:var(--font-mono);">abc✓</span>
+            <span>Spell Check &amp; Proofread</span>
+            <span id="spellcheck-modal-summary-badge" class="spellcheck-badge-count is-zero">0 issues</span>
+          </div>
+          <button class="modal-close-btn" id="btn-close-spellcheck-modal">&times;</button>
+        </div>
+
+        <!-- Live Spellcheck Settings & Quick Actions -->
+        <div style="display:flex; align-items:center; justify-content:space-between; gap:10px; background:var(--bg-surface); border:1px solid var(--border-strong); padding:9px 12px; border-radius:10px;">
+          <label style="display:flex; align-items:center; gap:8px; cursor:pointer; font-size:0.8rem; color:var(--text-main); font-weight:500;">
+            <input type="checkbox" id="spellcheck-toggle-live" checked style="width:15px; height:15px; accent-color:var(--accent); cursor:pointer;" />
+            <span>Live Spell Check &amp; Canvas Underlines</span>
+          </label>
+          <div style="display:flex; align-items:center; gap:6px;">
+            <button type="button" class="ui-btn" id="btn-spellcheck-rescan" style="padding:5px 10px; font-size:0.75rem; border:1px solid var(--border-subtle);">↻ Re-scan</button>
+            <button type="button" class="ui-btn primary" id="btn-spellcheck-fix-all" style="padding:5px 10px; font-size:0.75rem;">✓ Fix All</button>
+          </div>
+        </div>
+
+        <!-- Detected Issues List -->
+        <div id="spellcheck-issues-container" class="spellcheck-issue-list"></div>
+
+        <!-- Personal Custom Dictionary Bar -->
+        <div style="background:var(--bg-surface); border:1px solid var(--border-subtle); border-radius:10px; padding:10px 12px;">
+          <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:6px;">
+            <span style="font-size:0.72rem; font-weight:700; text-transform:uppercase; letter-spacing:0.05em; color:var(--text-muted);">Personal Dictionary (<span id="spellcheck-dict-count">0</span> words)</span>
+            <button type="button" id="btn-clear-custom-dict" style="background:transparent; border:none; color:var(--text-dim); font-size:0.72rem; cursor:pointer; padding:0;">Clear Dictionary</button>
+          </div>
+          <div style="display:flex; gap:6px;">
+            <input type="text" id="spellcheck-add-dict-input" class="form-input" placeholder="Add custom word or brand name to dictionary..." style="padding:6px 10px; font-size:0.78rem;" />
+            <button type="button" class="ui-btn" id="btn-add-dict-word" style="border:1px solid var(--border-strong); font-size:0.76rem; white-space:nowrap;">+ Add Word</button>
+          </div>
+          <div id="spellcheck-dict-tags" style="display:flex; flex-wrap:wrap; gap:5px; margin-top:8px;"></div>
+        </div>
+
+        <div style="display:flex; justify-content:flex-end; align-items:center; padding-top:6px;">
+          <button class="ui-btn primary" id="btn-done-spellcheck-modal">Done</button>
+        </div>
+      </div>
+    </div>
+
     <!-- Shortcuts Modal -->
     <div class="modal-overlay" id="shortcuts-modal">
       <div class="modal-box">
@@ -3042,6 +3249,10 @@
         <div class="shortcut-row">
           <span>Spotlight Search</span>
           <span class="kbd-badge">Ctrl + F</span>
+        </div>
+        <div class="shortcut-row">
+          <span>Spell Check &amp; Proofread Map</span>
+          <span class="kbd-badge">F7</span>
         </div>
         <div class="shortcut-row">
           <span>Presenter / Spotlight Mode</span>
@@ -4065,9 +4276,9 @@
             <div class="node-header">
               <div class="node-accent-bar" style="background-color: ${node.color || '#6366f1'}"></div>
               ${node.emoji ? `<span class="node-emoji-badge">${node.emoji}</span>` : ""}
-              <div class="node-title" data-node-id="${node.id}">${escapeHtml(node.text || "Untitled")}</div>
+              <div class="node-title" data-node-id="${node.id}">${renderTextWithSpellcheck(node.text || "Untitled")}</div>
             </div>
-            ${node.desc ? `<div class="node-desc" data-node-id="${node.id}">${escapeHtml(node.desc)}</div>` : (!state.isPresenting ? `<div class="node-add-subtext-btn" data-node-id="${node.id}">+ Add subtext</div>` : "")}
+            ${node.desc ? `<div class="node-desc" data-node-id="${node.id}">${renderTextWithSpellcheck(node.desc)}</div>` : (!state.isPresenting ? `<div class="node-add-subtext-btn" data-node-id="${node.id}">+ Add subtext</div>` : "")}
             ${node.tags && node.tags.length > 0 ? `
               <div class="node-tags-list">
                 ${node.tags.map(t => `<span class="node-tag">${escapeHtml(t)}</span>`).join("")}
@@ -4562,6 +4773,7 @@
         updateInspectorBar();
         updateMinimap();
         updatePrompterContent();
+        updateSpellcheckBadge();
       }
 
       function hexToRgba(hex, alpha) {
@@ -4585,6 +4797,361 @@
         return (str || "").replace(/[&<>"']/g, m => ({
           '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         })[m]);
+      }
+
+      // =========================================================================
+      // SPELL CHECK & PROOFREAD ENGINE
+      // =========================================================================
+      const COMMON_TYPOS_MAP = {
+        "abondon": ["abandon"], "acheive": ["achieve"], "acheived": ["achieved"], "acheivement": ["achievement"],
+        "accomodate": ["accommodate"], "accomodation": ["accommodation"], "accross": ["across"], "actualy": ["actually"],
+        "additonal": ["additional"], "addres": ["address"], "adress": ["address"], "adn": ["and"], "agian": ["again"],
+        "agressive": ["aggressive"], "algoritm": ["algorithm"], "algorythm": ["algorithm"], "allways": ["always"],
+        "almots": ["almost"], "alot": ["a lot"], "alreay": ["already"], "alredy": ["already"], "amature": ["amateur"],
+        "anaylsis": ["analysis"], "analys": ["analysis", "analyze"], "andriod": ["android"], "anual": ["annual"],
+        "aparent": ["apparent"], "apparantly": ["apparently"], "appearence": ["appearance"], "apreciate": ["appreciate"],
+        "appropiate": ["appropriate"], "architecure": ["architecture"], "arent": ["aren't"], "arguement": ["argument"],
+        "assasin": ["assassin"], "assistnat": ["assistant"], "attenton": ["attention"], "audeince": ["audience"],
+        "availible": ["available"], "avaliable": ["available"], "awfull": ["awful"], "basicly": ["basically"],
+        "bcause": ["because"], "beacuse": ["because"], "becasue": ["because"], "becuase": ["because"],
+        "becomeing": ["becoming"], "begining": ["beginning"], "behavoir": ["behavior"], "beleif": ["belief"],
+        "beleive": ["believe"], "benifit": ["benefit"], "benifits": ["benefits"], "boudnary": ["boundary"],
+        "boundry": ["boundary"], "buisness": ["business"], "busines": ["business"], "calender": ["calendar"],
+        "calores": ["calories"], "camoflage": ["camouflage"], "cant": ["can't"], "carreer": ["career"],
+        "catagory": ["category"], "cemetary": ["cemetery"], "chage": ["change"], "changable": ["changeable"],
+        "charater": ["character"], "cheif": ["chief"], "childern": ["children"], "choise": ["choice"],
+        "collegue": ["colleague"], "comming": ["coming"], "commited": ["committed"], "commitee": ["committee"],
+        "communicaton": ["communication"], "comparsion": ["comparison"], "completly": ["completely"],
+        "concieve": ["conceive"], "concious": ["conscious"], "consistancy": ["consistency"], "continous": ["continuous"],
+        "contraints": ["constraints"], "controling": ["controlling"], "copywrite": ["copyright"], "couldnt": ["couldn't"],
+        "curiousity": ["curiosity"], "currrent": ["current"], "custmer": ["customer"], "decison": ["decision"],
+        "descision": ["decision"], "definately": ["definitely"], "definitly": ["definitely"], "definate": ["definite"],
+        "dependancy": ["dependency"], "desparate": ["desperate"], "develope": ["develop"], "developement": ["development"],
+        "didnt": ["didn't"], "diffrent": ["different"], "diferent": ["different"], "dilema": ["dilemma"],
+        "disapoint": ["disappoint"], "disipline": ["discipline"], "disciplne": ["discipline"], "doesnt": ["doesn't"],
+        "dont": ["don't"], "efficency": ["efficiency"], "effecient": ["efficient"], "embarass": ["embarrass"],
+        "enviroment": ["environment"], "enviornment": ["environment"], "equiped": ["equipped"], "equiptment": ["equipment"],
+        "especialy": ["especially"], "exampel": ["example"], "excellant": ["excellent"], "excercise": ["exercise"],
+        "excercises": ["exercises"], "existance": ["existence"], "experiance": ["experience"], "explanaton": ["explanation"],
+        "familar": ["familiar"], "farenheit": ["fahrenheit"], "febuary": ["february"], "finaly": ["finally"],
+        "flourescent": ["fluorescent"], "foriegn": ["foreign"], "forseeable": ["foreseeable"], "fourty": ["forty"],
+        "foward": ["forward"], "freind": ["friend"], "futher": ["further"], "garantee": ["guarantee"],
+        "gaurantee": ["guarantee"], "generaly": ["generally"], "goverment": ["government"], "govornment": ["government"],
+        "grammer": ["grammar"], "gratefull": ["grateful"], "greatful": ["grateful"], "guidline": ["guideline"],
+        "hadnt": ["hadn't"], "happend": ["happened"], "haras": ["harass"], "harrass": ["harass"], "hasnt": ["hasn't"],
+        "havent": ["haven't"], "heighth": ["height"], "heirarchy": ["hierarchy"], "hieght": ["height"],
+        "hinderance": ["hindrance"], "hte": ["the"], "humerous": ["humorous"], "hypertropy": ["hypertrophy"],
+        "hygeine": ["hygiene"], "hypocricy": ["hypocrisy"], "identfy": ["identify"], "ignor": ["ignore"],
+        "ignornace": ["ignorance"], "im": ["I'm"], "immediatly": ["immediately"], "immedietly": ["immediately"],
+        "importent": ["important"], "incase": ["in case"], "independant": ["independent"], "indispensible": ["indispensable"],
+        "infomation": ["information"], "inital": ["initial"], "initative": ["initiative"], "inoculate": ["inoculate"],
+        "insistant": ["insistent"], "intresting": ["interesting"], "interupt": ["interrupt"], "irresistable": ["irresistible"],
+        "isnt": ["isn't"], "ive": ["I've"], "jealos": ["jealous"], "judgement": ["judgment", "judgement"],
+        "knowlege": ["knowledge"], "knoledge": ["knowledge"], "labratory": ["laboratory"], "langauge": ["language"],
+        "learing": ["learning"], "learnng": ["learning"], "lenght": ["length"], "liason": ["liaison"],
+        "libary": ["library"], "lightening": ["lightning"], "liscense": ["license"], "lonley": ["lonely"],
+        "loosley": ["loosely"], "maintainance": ["maintenance"], "maintenence": ["maintenance"], "makng": ["making"],
+        "managment": ["management"], "manuever": ["maneuver"], "mathmatics": ["mathematics"], "medecine": ["medicine"],
+        "memroy": ["memory"], "milenium": ["millennium"], "millenium": ["millennium"], "miniscule": ["minuscule"],
+        "mischievious": ["mischievous"], "mispell": ["misspell"], "misterious": ["mysterious"], "motivaton": ["motivation"],
+        "naturaly": ["naturally"], "neccessary": ["necessary"], "necesary": ["necessary"], "neice": ["niece"],
+        "neigbor": ["neighbor"], "nieghbor": ["neighbor"], "noticable": ["noticeable"], "nutriton": ["nutrition"],
+        "ocasion": ["occasion"], "occassion": ["occasion"], "ocasionally": ["occasionally"], "occured": ["occurred"],
+        "occurence": ["occurrence"], "ocurrence": ["occurrence"], "oficial": ["official"], "omision": ["omission"],
+        "oportunity": ["opportunity"], "oppurtunity": ["opportunity"], "optmization": ["optimization"],
+        "originaly": ["originally"], "outragous": ["outrageous"], "parliment": ["parliament"], "particuliar": ["particular"],
+        "pasttime": ["pastime"], "pavillion": ["pavilion"], "peice": ["piece"], "peformance": ["performance"],
+        "performace": ["performance"], "percieve": ["perceive"], "perseverence": ["perseverance"], "personel": ["personnel", "personal"],
+        "plagarism": ["plagiarism"], "planng": ["planning"], "politican": ["politician"], "posession": ["possession"],
+        "potatos": ["potatoes"], "practicle": ["practical"], "prefered": ["preferred"], "presense": ["presence"],
+        "principel": ["principle", "principal"], "priviledge": ["privilege"], "probabaly": ["probably"], "probaly": ["probably"],
+        "probelm": ["problem"], "proces": ["process"], "professer": ["professor"], "progess": ["progress"],
+        "progres": ["progress"], "programing": ["programming"], "promiss": ["promise"], "pronounciation": ["pronunciation"],
+        "protien": ["protein"], "publically": ["publicly"], "quarentine": ["quarantine"], "questionaire": ["questionnaire"],
+        "readible": ["readable"], "readng": ["reading"], "realy": ["really"], "recieve": ["receive"],
+        "recieved": ["received"], "recieving": ["receiving"], "recomend": ["recommend"], "reccommend": ["recommend"],
+        "refered": ["referred"], "referance": ["reference"], "religous": ["religious"], "relevent": ["relevant"],
+        "relavant": ["relevant"], "rember": ["remember"], "remeber": ["remember"], "repetion": ["repetition"],
+        "resistence": ["resistance"], "responce": ["response"], "responsability": ["responsibility"],
+        "restaraunt": ["restaurant"], "resturaunt": ["restaurant"], "rythm": ["rhythm"], "rythym": ["rhythm"],
+        "scedule": ["schedule"], "shedule": ["schedule"], "sciense": ["science"], "secretary": ["secretary"],
+        "seige": ["siege"], "seize": ["seize"], "sieze": ["seize"], "seperate": ["separate"], "seperated": ["separated"],
+        "sergeant": ["sergeant"], "shoud": ["should"], "shouldnt": ["shouldn't"], "similiar": ["similar"],
+        "sincerly": ["sincerely"], "speach": ["speech"], "speling": ["spelling"], "strenght": ["strength"],
+        "strenghten": ["strengthen"], "structre": ["structure"], "studing": ["studying"], "subtopc": ["subtopic"],
+        "succesful": ["successful"], "successfull": ["successful"], "sucess": ["success"], "supercede": ["supersede"],
+        "suprise": ["surprise"], "surprize": ["surprise"], "taht": ["that"], "tatoo": ["tattoo"], "teh": ["the"],
+        "temperture": ["temperature"], "tendancy": ["tendency"], "testng": ["testing"], "therefor": ["therefore"],
+        "therfore": ["therefore"], "theyre": ["they're"], "thier": ["their"], "threshhold": ["threshold"],
+        "tomatos": ["tomatoes"], "tommorow": ["tomorrow"], "tomorow": ["tomorrow"], "tounge": ["tongue"],
+        "trackng": ["tracking"], "traacking": ["tracking"], "trainng": ["training"], "truely": ["truly"],
+        "twelth": ["twelfth"], "tyrany": ["tyranny"], "underate": ["underrate"], "understandng": ["understanding"],
+        "unforseen": ["unforeseen"], "unfortunatly": ["unfortunately"], "untill": ["until"], "unuseual": ["unusual"],
+        "usally": ["usually"], "usefull": ["useful"], "vacume": ["vacuum"], "valuble": ["valuable"],
+        "vegatable": ["vegetable"], "vehical": ["vehicle"], "visious": ["vicious"], "visulization": ["visualization"],
+        "wasnt": ["wasn't"], "weathers": ["weather"], "wednesday": ["Wednesday"], "weve": ["we've"],
+        "werent": ["weren't"], "whatver": ["whatever"], "whereever": ["wherever"], "wich": ["which"],
+        "wierd": ["weird"], "wiht": ["with"], "wont": ["won't"], "workng": ["working"], "workot": ["workout"],
+        "workuot": ["workout"], "wouldnt": ["wouldn't"], "writng": ["writing"], "writting": ["writing"],
+        "yeild": ["yield"], "youre": ["you're"]
+      };
+
+      const customDictionarySet = new Set();
+      const ignoredWordsSet = new Set();
+
+      function loadCustomDictionary() {
+        try {
+          const raw = localStorage.getItem("mindflow_custom_dictionary_v1");
+          if (raw) {
+            const arr = JSON.parse(raw);
+            if (Array.isArray(arr)) {
+              arr.forEach(w => {
+                if (typeof w === "string" && w.trim()) customDictionarySet.add(w.trim().toLowerCase());
+              });
+            }
+          }
+        } catch (e) {}
+      }
+
+      function saveCustomDictionary() {
+        try {
+          localStorage.setItem("mindflow_custom_dictionary_v1", JSON.stringify(Array.from(customDictionarySet)));
+        } catch (e) {}
+      }
+
+      loadCustomDictionary();
+
+      function matchCapitalization(originalWord, suggestion) {
+        if (!originalWord || !suggestion) return suggestion;
+        if (originalWord === originalWord.toUpperCase() && originalWord.length > 1) {
+          return suggestion.toUpperCase();
+        }
+        if (originalWord[0] === originalWord[0].toUpperCase()) {
+          return suggestion.charAt(0).toUpperCase() + suggestion.slice(1);
+        }
+        return suggestion;
+      }
+
+      function checkWordSpelling(rawWord) {
+        if (!rawWord || rawWord.length < 2) return null;
+        if (!/^[a-zA-Z']+$/.test(rawWord)) return null;
+        const cleanWord = rawWord.replace(/^'+|'+$/g, "");
+        if (cleanWord.length < 2) return null;
+
+        const lower = cleanWord.toLowerCase();
+        if (customDictionarySet.has(lower) || ignoredWordsSet.has(lower)) return null;
+
+        // Skip ALL-CAPS acronyms (e.g. "AI", "ML", "RAG", "PCA", "CNN", "SVG", "PNG", "API")
+        if (cleanWord === cleanWord.toUpperCase() && cleanWord.length <= 6) return null;
+
+        // 1. Check accidental double capital at start of word (e.g., "TRacking", "PRogress")
+        if (/^[A-Z]{2}[a-z]{2,}$/.test(cleanWord)) {
+          const fixedCap = cleanWord.charAt(0).toUpperCase() + cleanWord.slice(1).toLowerCase();
+          const baseCheck = COMMON_TYPOS_MAP[fixedCap.toLowerCase()];
+          return {
+            reason: "Mixed capitalization typo",
+            suggestions: baseCheck ? baseCheck.map(s => matchCapitalization(fixedCap, s)) : [fixedCap]
+          };
+        }
+
+        // 2. Check curated common misspellings & missing apostrophes
+        if (Object.prototype.hasOwnProperty.call(COMMON_TYPOS_MAP, lower)) {
+          return {
+            reason: lower.includes("nt") || ["im", "ive", "youre", "theyre", "weve"].includes(lower)
+              ? "Missing apostrophe / contraction"
+              : "Common spelling or typo",
+            suggestions: COMMON_TYPOS_MAP[lower].map(s => matchCapitalization(cleanWord, s))
+          };
+        }
+
+        // 3. Check 3+ identical consecutive letters (e.g. "traacking", "progggress", "helllo")
+        if (/([a-zA-Z])\1\1/.test(cleanWord)) {
+          const dedupedSingle = cleanWord.replace(/([a-zA-Z])\1{2,}/g, "$1");
+          const dedupedDouble = cleanWord.replace(/([a-zA-Z])\1{2,}/g, "$1$1");
+          const sugs = [];
+          if (COMMON_TYPOS_MAP[dedupedSingle.toLowerCase()]) {
+            sugs.push(...COMMON_TYPOS_MAP[dedupedSingle.toLowerCase()].map(s => matchCapitalization(cleanWord, s)));
+          } else {
+            sugs.push(dedupedSingle);
+          }
+          if (dedupedDouble !== dedupedSingle) sugs.push(dedupedDouble);
+          return {
+            reason: "Repeated letters typo",
+            suggestions: sugs
+          };
+        }
+
+        // 4. Heuristic suffix typos (e.g., words ending in consonant + "ng" instead of "ing" like "trackng", "buildng")
+        if (lower.length >= 6 && /[bcdfghjklmnpqrstvwxz]ng$/.test(lower) && !lower.endsWith("ing") && !lower.endsWith("ong") && !lower.endsWith("ung") && !lower.endsWith("ang")) {
+          const fixedIng = cleanWord.slice(0, -2) + "ing";
+          return {
+            reason: "Missing 'i' in -ing suffix",
+            suggestions: [fixedIng]
+          };
+        }
+
+        return null;
+      }
+
+      function renderTextWithSpellcheck(str) {
+        const text = str || "";
+        if (state.spellcheckEnabled === false || state.isPresenting) {
+          return escapeHtml(text);
+        }
+
+        // Tokenize preserving whitespace and punctuation
+        const parts = text.split(/([a-zA-Z']+)/g);
+        let resultHtml = "";
+        let prevWordLower = "";
+        let hadOnlySpaceSincePrevWord = false;
+
+        for (let i = 0; i < parts.length; i++) {
+          const tok = parts[i];
+          if (!tok) continue;
+          if (/^[a-zA-Z']+$/.test(tok)) {
+            const lower = tok.toLowerCase();
+            const isDoubled = prevWordLower && lower === prevWordLower && lower.length >= 2 && hadOnlySpaceSincePrevWord && !ignoredWordsSet.has(lower);
+            const issue = checkWordSpelling(tok);
+            if (isDoubled || issue) {
+              const tip = isDoubled
+                ? `Repeated word "${escapeHtml(tok)}" — Press F7 or click Spell Check`
+                : `Possible typo: ${issue.suggestions.join(", ")} — Press F7 or click Spell Check`;
+              resultHtml += `<span class="spell-error-word" title="${tip}">${escapeHtml(tok)}</span>`;
+            } else {
+              resultHtml += escapeHtml(tok);
+            }
+            prevWordLower = lower;
+            hadOnlySpaceSincePrevWord = false;
+          } else {
+            hadOnlySpaceSincePrevWord = /^\s+$/.test(tok);
+            if (!hadOnlySpaceSincePrevWord) prevWordLower = "";
+            resultHtml += escapeHtml(tok);
+          }
+        }
+        return resultHtml;
+      }
+
+      function scanTextForIssues(text, meta) {
+        const found = [];
+        if (!text) return found;
+
+        // 1. Check repeated consecutive words (e.g. "the the")
+        const doubleRegex = /\b([a-zA-Z]{2,})(\s+)\1\b/gi;
+        let dm;
+        while ((dm = doubleRegex.exec(text)) !== null) {
+          const fullMatch = dm[0];
+          const singleWord = dm[1];
+          if (ignoredWordsSet.has(singleWord.toLowerCase())) continue;
+          const startIdx = dm.index;
+          const before = text.slice(Math.max(0, startIdx - 28), startIdx);
+          const after = text.slice(startIdx + fullMatch.length, Math.min(text.length, startIdx + fullMatch.length + 28));
+          found.push({
+            ...meta,
+            word: fullMatch,
+            startIndex: startIdx,
+            length: fullMatch.length,
+            reason: "Repeated consecutive word",
+            suggestions: [singleWord],
+            contextHtml: `${startIdx > 28 ? "…" : ""}${escapeHtml(before)}<mark class="spell-bad">${escapeHtml(fullMatch)}</mark>${escapeHtml(after)}${startIdx + fullMatch.length + 28 < text.length ? "…" : ""}`
+          });
+        }
+
+        // 2. Check individual word spelling
+        const wordRegex = /\b([a-zA-Z']+)\b/g;
+        let wm;
+        while ((wm = wordRegex.exec(text)) !== null) {
+          const word = wm[1];
+          const res = checkWordSpelling(word);
+          if (res) {
+            const startIdx = wm.index;
+            const before = text.slice(Math.max(0, startIdx - 28), startIdx);
+            const after = text.slice(startIdx + word.length, Math.min(text.length, startIdx + word.length + 28));
+            found.push({
+              ...meta,
+              word,
+              startIndex: startIdx,
+              length: word.length,
+              reason: res.reason,
+              suggestions: res.suggestions,
+              contextHtml: `${startIdx > 28 ? "…" : ""}${escapeHtml(before)}<mark class="spell-bad">${escapeHtml(word)}</mark>${escapeHtml(after)}${startIdx + word.length + 28 < text.length ? "…" : ""}`
+            });
+          }
+        }
+        return found;
+      }
+
+      function scanSheetSpellingIssues() {
+        const sheet = getActiveSheet();
+        if (!sheet) return [];
+        const allIssues = [];
+
+        sheet.nodes.forEach(node => {
+          const label = node.text || "Untitled";
+          const emoji = node.emoji || "✦";
+          allIssues.push(...scanTextForIssues(node.text || "", {
+            targetType: "node",
+            targetId: node.id,
+            targetLabel: label,
+            targetEmoji: emoji,
+            field: "text",
+            fieldLabel: "Topic Title"
+          }));
+          if (node.desc) {
+            allIssues.push(...scanTextForIssues(node.desc, {
+              targetType: "node",
+              targetId: node.id,
+              targetLabel: label,
+              targetEmoji: emoji,
+              field: "desc",
+              fieldLabel: "Subtext / Notes"
+            }));
+          }
+          if (Array.isArray(node.tags)) {
+            node.tags.forEach((tagVal, tagIdx) => {
+              allIssues.push(...scanTextForIssues(tagVal, {
+                targetType: "node",
+                targetId: node.id,
+                targetLabel: label,
+                targetEmoji: emoji,
+                field: "tag",
+                tagIndex: tagIdx,
+                fieldLabel: "Tag"
+              }));
+            });
+          }
+        });
+
+        (sheet.boundaries || []).forEach(bnd => {
+          if (bnd.title) {
+            allIssues.push(...scanTextForIssues(bnd.title, {
+              targetType: "boundary",
+              targetId: bnd.id,
+              targetLabel: bnd.title,
+              targetEmoji: bnd.icon || "🏷️",
+              field: "title",
+              fieldLabel: "Boundary Title"
+            }));
+          }
+        });
+
+        return allIssues;
+      }
+
+      function updateSpellcheckBadge() {
+        const badgeEl = document.getElementById("spellcheck-toolbar-badge");
+        if (!badgeEl) return;
+        if (state.spellcheckEnabled === false) {
+          badgeEl.style.display = "none";
+          return;
+        }
+        const issues = scanSheetSpellingIssues();
+        if (issues.length > 0) {
+          badgeEl.textContent = String(issues.length);
+          badgeEl.classList.remove("is-zero");
+          badgeEl.style.display = "inline-flex";
+        } else {
+          badgeEl.style.display = "none";
+        }
       }
 
       // =========================================================================
@@ -4720,6 +5287,12 @@
         const titleEl = document.querySelector(`.node-title[data-node-id="${nodeId}"]`);
         if (!titleEl) return;
 
+        const sheet = getActiveSheet();
+        const nodeObj = sheet.nodes.find(n => n.id === nodeId);
+        if (nodeObj) {
+          titleEl.textContent = nodeObj.text || "";
+        }
+        titleEl.spellcheck = state.spellcheckEnabled !== false;
         titleEl.contentEditable = "true";
         titleEl.focus();
 
@@ -4797,8 +5370,11 @@
             const nodeEl = document.getElementById(`node-${nodeId}`);
             if (nodeEl) nodeEl.appendChild(descEl);
           }
+        } else {
+          descEl.textContent = node.desc || "";
         }
 
+        descEl.spellcheck = state.spellcheckEnabled !== false;
         descEl.contentEditable = "true";
         descEl.focus();
 
@@ -5268,6 +5844,8 @@
         document.getElementById("ctx-add-sibling").style.display = hasNode ? "flex" : "none";
         document.getElementById("ctx-connect-arrow").style.display = hasNode ? "flex" : "none";
         document.getElementById("ctx-edit-details").style.display = hasNode ? "flex" : "none";
+        const ctxUploadImg = document.getElementById("ctx-upload-image");
+        if (ctxUploadImg) ctxUploadImg.style.display = hasNode ? "flex" : "none";
         document.getElementById("ctx-duplicate").style.display = hasNode ? "flex" : "none";
         document.getElementById("ctx-fold").style.display = hasNode ? "flex" : "none";
 
@@ -6432,6 +7010,286 @@
       searchInput.addEventListener("input", (e) => performSearch(e.target.value));
 
       // =========================================================================
+      // SPELL CHECK & PROOFREAD STUDIO MODAL CONTROLLER (F7)
+      // =========================================================================
+      const spellcheckModalEl = document.getElementById("spellcheck-modal");
+
+      function applyFieldTextReplacement(issue, replacementWord) {
+        const sheet = getActiveSheet();
+        if (!sheet) return false;
+
+        if (issue.targetType === "node") {
+          const node = sheet.nodes.find(n => n.id === issue.targetId);
+          if (!node) return false;
+          if (issue.field === "text") {
+            const cur = node.text || "";
+            node.text = cur.slice(0, issue.startIndex) + replacementWord + cur.slice(issue.startIndex + issue.length);
+            return true;
+          } else if (issue.field === "desc") {
+            const cur = node.desc || "";
+            node.desc = cur.slice(0, issue.startIndex) + replacementWord + cur.slice(issue.startIndex + issue.length);
+            return true;
+          } else if (issue.field === "tag" && Array.isArray(node.tags) && node.tags[issue.tagIndex] !== undefined) {
+            const cur = node.tags[issue.tagIndex] || "";
+            node.tags[issue.tagIndex] = cur.slice(0, issue.startIndex) + replacementWord + cur.slice(issue.startIndex + issue.length);
+            return true;
+          }
+        } else if (issue.targetType === "boundary") {
+          const bnd = (sheet.boundaries || []).find(b => b.id === issue.targetId);
+          if (!bnd) return false;
+          const cur = bnd.title || "";
+          bnd.title = cur.slice(0, issue.startIndex) + replacementWord + cur.slice(issue.startIndex + issue.length);
+          return true;
+        }
+        return false;
+      }
+
+      function renderCustomDictionaryTags() {
+        const countEl = document.getElementById("spellcheck-dict-count");
+        const tagsContainer = document.getElementById("spellcheck-dict-tags");
+        if (!countEl || !tagsContainer) return;
+
+        const words = Array.from(customDictionarySet).sort();
+        countEl.textContent = String(words.length);
+        tagsContainer.innerHTML = "";
+
+        if (words.length === 0) {
+          tagsContainer.innerHTML = `<span style="font-size:0.74rem; color:var(--text-dim);">No custom dictionary words added yet.</span>`;
+          return;
+        }
+
+        words.forEach(w => {
+          const chip = document.createElement("span");
+          chip.style.cssText = "display:inline-flex; align-items:center; gap:5px; background:rgba(255,255,255,0.06); border:1px solid var(--border-subtle); padding:2px 8px; border-radius:999px; font-size:0.74rem; color:var(--text-main);";
+          chip.innerHTML = `<span>${escapeHtml(w)}</span><button type="button" style="background:none; border:none; color:var(--text-muted); cursor:pointer; font-size:0.85rem; line-height:1; padding:0;" title="Remove from dictionary">&times;</button>`;
+          chip.querySelector("button").addEventListener("click", () => {
+            customDictionarySet.delete(w);
+            saveCustomDictionary();
+            render();
+            renderSpellcheckModal();
+          });
+          tagsContainer.appendChild(chip);
+        });
+      }
+
+      function renderSpellcheckModal() {
+        const container = document.getElementById("spellcheck-issues-container");
+        const summaryBadge = document.getElementById("spellcheck-modal-summary-badge");
+        const fixAllBtn = document.getElementById("btn-spellcheck-fix-all");
+        const liveToggle = document.getElementById("spellcheck-toggle-live");
+        if (!container || !summaryBadge) return;
+
+        if (liveToggle) {
+          liveToggle.checked = state.spellcheckEnabled !== false;
+        }
+
+        const issues = scanSheetSpellingIssues();
+        summaryBadge.textContent = issues.length === 1 ? "1 issue" : `${issues.length} issues`;
+        summaryBadge.classList.toggle("is-zero", issues.length === 0);
+
+        if (fixAllBtn) {
+          fixAllBtn.disabled = issues.length === 0;
+          fixAllBtn.style.opacity = issues.length === 0 ? "0.5" : "1";
+          fixAllBtn.textContent = issues.length > 0 ? `✓ Fix All (${issues.length})` : "✓ Fix All";
+        }
+
+        container.innerHTML = "";
+
+        if (issues.length === 0) {
+          container.innerHTML = `
+            <div style="padding:28px 16px; text-align:center; background:var(--bg-surface); border:1px dashed var(--border-strong); border-radius:12px;">
+              <div style="font-size:1.8rem; margin-bottom:6px;">✨</div>
+              <div style="font-size:0.92rem; font-weight:700; color:var(--text-main); margin-bottom:4px;">No Spelling or Proofreading Issues Found!</div>
+              <div style="font-size:0.78rem; color:var(--text-muted);">All topic titles, subtext notes, tags, and boundary titles on this sheet look clean.</div>
+            </div>
+          `;
+          renderCustomDictionaryTags();
+          return;
+        }
+
+        issues.forEach((issue) => {
+          const card = document.createElement("div");
+          card.className = "spellcheck-issue-card";
+
+          const bestSuggestion = (issue.suggestions && issue.suggestions[0]) || issue.word;
+
+          card.innerHTML = `
+            <div class="spellcheck-issue-header">
+              <button type="button" class="spellcheck-topic-link" title="Jump to topic on canvas">
+                <span>${issue.targetEmoji}</span>
+                <span>${escapeHtml(issue.targetLabel)}</span>
+              </button>
+              <div style="display:flex; align-items:center; gap:6px;">
+                <span style="font-size:0.72rem; color:var(--text-dim);">${escapeHtml(issue.reason)}</span>
+                <span class="spellcheck-field-badge">${escapeHtml(issue.fieldLabel)}</span>
+              </div>
+            </div>
+            <div class="spellcheck-context-line">${issue.contextHtml}</div>
+            <div class="spellcheck-suggestions-row">
+              <span style="font-size:0.74rem; color:var(--text-muted); font-weight:600;">Suggestions:</span>
+              ${issue.suggestions.map(s => `<button type="button" class="spell-suggestion-chip" data-sug="${escapeHtml(s)}" title="Click to replace with '${escapeHtml(s)}'">→ ${escapeHtml(s)}</button>`).join("")}
+            </div>
+            <div class="spellcheck-actions-row">
+              <div style="display:flex; align-items:center; gap:5px; flex:1;">
+                <input type="text" class="form-input spell-custom-replace-input" value="${escapeHtml(bestSuggestion)}" style="padding:4px 8px; font-size:0.76rem; max-width:165px;" title="Custom replacement text" />
+                <button type="button" class="ui-btn btn-spell-replace-custom" style="padding:4px 9px; font-size:0.74rem; border:1px solid var(--border-strong);">Replace</button>
+              </div>
+              <div style="display:flex; align-items:center; gap:5px;">
+                <button type="button" class="ui-btn btn-spell-ignore" style="padding:4px 8px; font-size:0.73rem; color:var(--text-muted);">Ignore</button>
+                <button type="button" class="ui-btn btn-spell-add-dict" style="padding:4px 8px; font-size:0.73rem; border:1px solid var(--border-subtle);" title="Save '${escapeHtml(issue.word.toLowerCase())}' to Personal Dictionary">+ Dictionary</button>
+              </div>
+            </div>
+          `;
+
+          // Jump to topic on canvas
+          card.querySelector(".spellcheck-topic-link").addEventListener("click", () => {
+            const sheet = getActiveSheet();
+            if (issue.targetType === "node") {
+              const n = sheet.nodes.find(x => x.id === issue.targetId);
+              if (n) {
+                selectNode(n.id);
+                const targetZoom = 1.25;
+                smoothCameraTo(window.innerWidth / 2 - n.x * targetZoom, window.innerHeight / 2 - n.y * targetZoom, targetZoom, 380);
+              }
+            } else if (issue.targetType === "boundary") {
+              state.selectedBoundaryId = issue.targetId;
+              render();
+            }
+          });
+
+          // Suggestion chip one-click replace
+          card.querySelectorAll(".spell-suggestion-chip").forEach(chip => {
+            chip.addEventListener("click", () => {
+              const rep = chip.dataset.sug;
+              if (applyFieldTextReplacement(issue, rep)) {
+                pushHistory();
+                render();
+                renderSpellcheckModal();
+                showToast(`Replaced "${issue.word}" → "${rep}"`);
+              }
+            });
+          });
+
+          // Custom replace button
+          const customInput = card.querySelector(".spell-custom-replace-input");
+          card.querySelector(".btn-spell-replace-custom").addEventListener("click", () => {
+            const rep = customInput.value.trim();
+            if (rep && applyFieldTextReplacement(issue, rep)) {
+              pushHistory();
+              render();
+              renderSpellcheckModal();
+              showToast(`Replaced "${issue.word}" → "${rep}"`);
+            }
+          });
+
+          // Ignore button
+          card.querySelector(".btn-spell-ignore").addEventListener("click", () => {
+            const cleanKey = issue.word.split(/\s+/)[0].toLowerCase();
+            ignoredWordsSet.add(cleanKey);
+            render();
+            renderSpellcheckModal();
+          });
+
+          // Add to Dictionary button
+          card.querySelector(".btn-spell-add-dict").addEventListener("click", () => {
+            const cleanKey = issue.word.split(/\s+/)[0].toLowerCase();
+            customDictionarySet.add(cleanKey);
+            saveCustomDictionary();
+            render();
+            renderSpellcheckModal();
+            showToast(`Added "${cleanKey}" to Personal Dictionary`);
+          });
+
+          container.appendChild(card);
+        });
+
+        renderCustomDictionaryTags();
+      }
+
+      function openSpellcheckModal() {
+        closeAllDropdowns();
+        renderSpellcheckModal();
+        spellcheckModalEl?.classList.add("is-open");
+      }
+
+      document.getElementById("btn-spellcheck-toolbar")?.addEventListener("click", openSpellcheckModal);
+      document.getElementById("btn-spellcheck-menu")?.addEventListener("click", openSpellcheckModal);
+      document.getElementById("btn-close-spellcheck-modal")?.addEventListener("click", () => {
+        spellcheckModalEl?.classList.remove("is-open");
+      });
+      document.getElementById("btn-done-spellcheck-modal")?.addEventListener("click", () => {
+        spellcheckModalEl?.classList.remove("is-open");
+      });
+      spellcheckModalEl?.addEventListener("click", (e) => {
+        if (e.target === spellcheckModalEl) spellcheckModalEl.classList.remove("is-open");
+      });
+
+      document.getElementById("btn-spellcheck-rescan")?.addEventListener("click", () => {
+        render();
+        renderSpellcheckModal();
+        showToast("Sheet Re-scanned");
+      });
+
+      document.getElementById("spellcheck-toggle-live")?.addEventListener("change", (e) => {
+        state.spellcheckEnabled = e.target.checked;
+        document.querySelectorAll("input[type='text'], textarea").forEach(el => {
+          el.spellcheck = state.spellcheckEnabled;
+        });
+        render();
+        renderSpellcheckModal();
+        showToast(state.spellcheckEnabled ? "Live Spell Check Enabled" : "Live Spell Check Disabled");
+      });
+
+      document.getElementById("btn-spellcheck-fix-all")?.addEventListener("click", () => {
+        let fixedCount = 0;
+        // Apply fixes iteratively from end of each string to preserve indices
+        while (true) {
+          const currentIssues = scanSheetSpellingIssues();
+          if (currentIssues.length === 0) break;
+          const issue = currentIssues[0];
+          const best = (issue.suggestions && issue.suggestions[0]) || issue.word;
+          if (!applyFieldTextReplacement(issue, best)) break;
+          fixedCount++;
+          if (fixedCount > 200) break;
+        }
+        if (fixedCount > 0) {
+          pushHistory();
+          render();
+          renderSpellcheckModal();
+          showToast(`Fixed ${fixedCount} spelling issue${fixedCount > 1 ? "s" : ""}`);
+        }
+      });
+
+      document.getElementById("btn-add-dict-word")?.addEventListener("click", () => {
+        const input = document.getElementById("spellcheck-add-dict-input");
+        if (!input) return;
+        const w = input.value.trim().toLowerCase();
+        if (!w) return;
+        customDictionarySet.add(w);
+        saveCustomDictionary();
+        input.value = "";
+        render();
+        renderSpellcheckModal();
+        showToast(`Added "${w}" to Personal Dictionary`);
+      });
+
+      document.getElementById("spellcheck-add-dict-input")?.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          document.getElementById("btn-add-dict-word")?.click();
+        }
+      });
+
+      document.getElementById("btn-clear-custom-dict")?.addEventListener("click", () => {
+        if (customDictionarySet.size === 0) return;
+        customDictionarySet.clear();
+        saveCustomDictionary();
+        render();
+        renderSpellcheckModal();
+        showToast("Personal Dictionary Cleared");
+      });
+
+      // =========================================================================
       // TOOL PALETTE CONTROLLER
       // =========================================================================
       const TOOL_CONFIGS = {
@@ -7516,6 +8374,11 @@
       // KEYBOARD SHORTCUTS
       // =========================================================================
       window.addEventListener("keydown", (e) => {
+        if (e.key === "F7") {
+          e.preventDefault();
+          openSpellcheckModal();
+          return;
+        }
         if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA" || e.target.isContentEditable) return;
 
         if (e.key === "Tab") {
@@ -7565,6 +8428,7 @@
           shortcutsModal.classList.remove("is-open");
           detailsModal.classList.remove("is-open");
           searchModal.classList.remove("is-open");
+          spellcheckModalEl?.classList.remove("is-open");
         } else if (e.key === "f" || e.key === "F") {
           fitView(true);
         } else if (e.key === " ") {
