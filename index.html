@@ -38,6 +38,7 @@
       --shadow-selected: 0 0 0 2.5px #6366f1, 0 14px 35px -5px rgba(99, 102, 241, 0.35);
     }
 
+    :root[data-theme="light"],
     body[data-theme="light"] {
       --bg-canvas: #f8fafc;
       --bg-grid: rgba(0, 0, 0, 0.06);
@@ -64,6 +65,7 @@
       --shadow-selected: 0 0 0 2.5px #4f46e5, 0 10px 25px -4px rgba(79, 70, 229, 0.25);
     }
 
+    :root[data-theme="nord"],
     body[data-theme="nord"] {
       --bg-canvas: #242933;
       --bg-grid: rgba(216, 222, 233, 0.05);
@@ -77,11 +79,16 @@
       --text-dim: #88c0d0;
       --accent: #88c0d0;
       --accent-glow: rgba(136, 192, 208, 0.3);
+      --accent-hover: #81a1c1;
       --connector-color: rgba(136, 192, 208, 0.35);
       --connector-active: #81a1c1;
       --selection-outline: #88c0d0;
+      --shadow-node: 0 10px 28px -5px rgba(15, 20, 28, 0.55), 0 0 0 1px rgba(216, 222, 233, 0.08);
+      --shadow-hover: 0 16px 36px -6px rgba(15, 20, 28, 0.7), 0 0 0 1px rgba(136, 192, 208, 0.4);
+      --shadow-selected: 0 0 0 2.5px #88c0d0, 0 14px 32px -5px rgba(136, 192, 208, 0.3);
     }
 
+    :root[data-theme="warm"],
     body[data-theme="warm"] {
       --bg-canvas: #1c1917;
       --bg-grid: rgba(253, 230, 138, 0.04);
@@ -95,11 +102,16 @@
       --text-dim: #a8a29e;
       --accent: #f59e0b;
       --accent-glow: rgba(245, 158, 11, 0.3);
+      --accent-hover: #d97706;
       --connector-color: rgba(245, 158, 11, 0.35);
       --connector-active: #fbbf24;
       --selection-outline: #f59e0b;
+      --shadow-node: 0 10px 28px -5px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(253, 230, 138, 0.08);
+      --shadow-hover: 0 16px 36px -6px rgba(0, 0, 0, 0.72), 0 0 0 1px rgba(245, 158, 11, 0.4);
+      --shadow-selected: 0 0 0 2.5px #f59e0b, 0 14px 32px -5px rgba(245, 158, 11, 0.32);
     }
 
+    :root[data-theme="oled"],
     body[data-theme="oled"] {
       --bg-canvas: #000000;
       --bg-grid: rgba(56, 189, 248, 0.08);
@@ -113,11 +125,16 @@
       --text-dim: #64748b;
       --accent: #38bdf8;
       --accent-glow: rgba(56, 189, 248, 0.35);
+      --accent-hover: #0284c7;
       --connector-color: rgba(56, 189, 248, 0.35);
       --connector-active: #7dd3fc;
       --selection-outline: #38bdf8;
+      --shadow-node: 0 10px 30px -5px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(56, 189, 248, 0.12);
+      --shadow-hover: 0 18px 40px -6px rgba(0, 0, 0, 0.85), 0 0 0 1px rgba(56, 189, 248, 0.45);
+      --shadow-selected: 0 0 0 2.5px #38bdf8, 0 14px 35px -5px rgba(56, 189, 248, 0.35);
     }
 
+    :root[data-theme="emerald"],
     body[data-theme="emerald"] {
       --bg-canvas: #06120e;
       --bg-grid: rgba(16, 185, 129, 0.07);
@@ -131,11 +148,16 @@
       --text-dim: #6ee7b7;
       --accent: #10b981;
       --accent-glow: rgba(16, 185, 129, 0.35);
+      --accent-hover: #059669;
       --connector-color: rgba(16, 185, 129, 0.36);
       --connector-active: #34d399;
       --selection-outline: #10b981;
+      --shadow-node: 0 10px 30px -5px rgba(0, 0, 0, 0.6), 0 0 0 1px rgba(16, 185, 129, 0.12);
+      --shadow-hover: 0 18px 40px -6px rgba(0, 0, 0, 0.75), 0 0 0 1px rgba(16, 185, 129, 0.45);
+      --shadow-selected: 0 0 0 2.5px #10b981, 0 14px 35px -5px rgba(16, 185, 129, 0.35);
     }
 
+    :root[data-theme="cyber"],
     body[data-theme="cyber"] {
       --bg-canvas: #0b0514;
       --bg-grid: rgba(236, 72, 153, 0.08);
@@ -149,11 +171,16 @@
       --text-dim: #e879f9;
       --accent: #ec4899;
       --accent-glow: rgba(236, 72, 153, 0.4);
+      --accent-hover: #db2777;
       --connector-color: rgba(236, 72, 153, 0.38);
       --connector-active: #f472b6;
       --selection-outline: #ec4899;
+      --shadow-node: 0 10px 30px -5px rgba(0, 0, 0, 0.65), 0 0 0 1px rgba(236, 72, 153, 0.14);
+      --shadow-hover: 0 18px 40px -6px rgba(0, 0, 0, 0.8), 0 0 0 1px rgba(236, 72, 153, 0.48);
+      --shadow-selected: 0 0 0 2.5px #ec4899, 0 14px 35px -5px rgba(236, 72, 153, 0.38);
     }
 
+    :root[data-theme="paper"],
     body[data-theme="paper"] {
       --bg-canvas: #fdf6e3;
       --bg-grid: rgba(101, 123, 131, 0.1);
@@ -167,6 +194,7 @@
       --text-dim: #839496;
       --accent: #d97706;
       --accent-glow: rgba(217, 119, 6, 0.24);
+      --accent-hover: #b45309;
       --connector-color: rgba(88, 110, 117, 0.35);
       --connector-active: #d97706;
       --selection-outline: #d97706;
@@ -366,9 +394,9 @@
       max-width: 380px;
       font-weight: 700;
       font-size: 1.25rem;
-      background: linear-gradient(135deg, rgba(99, 102, 241, 0.18), rgba(168, 85, 247, 0.12)), var(--bg-surface-elevated);
-      border: 1.5px solid rgba(129, 140, 248, 0.5);
-      box-shadow: 0 14px 40px -8px rgba(99, 102, 241, 0.4), 0 0 0 1px rgba(129, 140, 248, 0.25);
+      background: linear-gradient(135deg, var(--accent-glow), transparent 85%), var(--bg-surface-elevated);
+      border: 1.5px solid var(--accent);
+      box-shadow: var(--shadow-hover);
     }
 
     .mind-node.is-root .node-title {
@@ -878,6 +906,15 @@
     .drag-drop-indicator::after { right: -4px; }
 
     /* Presentation Spotlight & Cinematic Modes */
+    body.is-presenting {
+      background-color: var(--bg-canvas) !important;
+      color: var(--text-main) !important;
+    }
+
+    body.is-presenting #canvas-viewport {
+      background-color: var(--bg-canvas) !important;
+    }
+
     body.is-presenting #sheet-tabs-bar,
     body.is-presenting #minimap-panel,
     body.is-presenting #bottom-bar,
@@ -889,7 +926,7 @@
     }
 
     body.is-presenting .mind-node {
-      opacity: 0.12;
+      opacity: 0.16;
       filter: blur(1.5px);
       pointer-events: none;
       transition: opacity 0.35s ease, filter 0.35s ease, transform 0.35s ease;
@@ -898,16 +935,20 @@
     body.is-presenting .mind-node.is-spotlight {
       opacity: 1 !important;
       filter: none !important;
-      box-shadow: 0 0 0 3.5px var(--accent), 0 25px 60px -5px var(--accent-glow) !important;
+      box-shadow: 0 0 0 3.5px var(--node-color, var(--accent)), var(--shadow-hover) !important;
       transform: scale(1.06) !important;
       pointer-events: auto;
       z-index: 50;
     }
 
+    body.is-presenting .mind-node.shape-plain.is-selected {
+      border-color: transparent !important;
+    }
+
     /* Active item inside a presented Boundary Group: enlarged & emphasized */
     body.is-presenting .mind-node.is-spotlight.is-boundary-focus {
       transform: scale(1.16) !important;
-      box-shadow: 0 0 0 4px var(--accent), 0 28px 65px -4px var(--accent-glow) !important;
+      box-shadow: 0 0 0 4px var(--node-color, var(--accent)), var(--shadow-hover) !important;
       z-index: 60;
     }
 
@@ -917,21 +958,27 @@
 
     /* Sibling items in the same active Boundary Group: shown clearly together at normal size */
     body.is-presenting .mind-node.is-boundary-peer {
-      opacity: 0.92 !important;
+      opacity: 0.94 !important;
       filter: none !important;
       transform: scale(0.95) !important;
       border-color: var(--border-strong) !important;
-      box-shadow: 0 10px 26px -5px rgba(0, 0, 0, 0.45) !important;
+      box-shadow: var(--shadow-node) !important;
       pointer-events: auto;
       z-index: 45;
+    }
+
+    body.is-presenting .mind-node.shape-plain.is-boundary-peer,
+    body.is-presenting .mind-node.shape-bracket.is-boundary-peer,
+    body.is-presenting .mind-node.shape-underline.is-boundary-peer {
+      box-shadow: none !important;
     }
 
     /* Lineage Ancestor illumination connecting back to home/root */
     body.is-presenting .mind-node.is-lineage {
       opacity: 0.88 !important;
       filter: none !important;
-      border-color: var(--accent) !important;
-      box-shadow: 0 0 0 1.5px var(--accent), 0 8px 24px -4px var(--accent-glow) !important;
+      border-color: var(--node-color, var(--accent)) !important;
+      box-shadow: 0 0 0 1.5px var(--node-color, var(--accent)), var(--shadow-node) !important;
       pointer-events: auto;
       z-index: 40;
     }
@@ -946,7 +993,7 @@
     }
 
     body.is-presenting path.connector-path {
-      opacity: 0.10;
+      opacity: 0.12;
       transition: opacity 0.35s ease, stroke-width 0.35s ease;
     }
 
@@ -959,18 +1006,19 @@
     }
 
     body.is-presenting path.connector-path.is-boundary-peer-path {
-      opacity: 0.72 !important;
+      opacity: 0.75 !important;
       stroke: var(--accent) !important;
       stroke-width: 2.5px !important;
     }
 
-    /* Cinematic Mode Visual Enhancements */
+    /* Cinematic Mode Visual Enhancements (Theme-Aware Stage Spotlight) */
     body.is-presenting.is-cinematic {
-      background-color: #080a10 !important;
+      background-color: var(--bg-canvas) !important;
     }
 
     body.is-presenting.is-cinematic #canvas-viewport {
-      background: radial-gradient(circle at 50% 50%, rgba(99, 102, 241, 0.08) 0%, rgba(8, 10, 16, 0.98) 100%) !important;
+      background-color: var(--bg-canvas) !important;
+      background-image: radial-gradient(circle at 50% 50%, var(--accent-glow) 0%, transparent 72%) !important;
     }
 
     body.is-presenting.is-cinematic .mind-node:not(.is-spotlight):not(.is-lineage):not(.is-boundary-peer) {
@@ -1753,25 +1801,27 @@
       display: inline-flex;
     }
 
-    /* Educational Teleprompter Script Card */
+    /* Educational Teleprompter Script Card (Centered Active Card + 3D Left-Fading Ancestor Trail) */
     #presenter-prompter {
       position: absolute;
       bottom: 28px;
       left: 50%;
       transform: translateX(-50%);
-      max-width: 650px;
-      width: 90vw;
+      max-width: 780px;
+      width: 92vw;
       background: var(--bg-surface-elevated);
       border: 1px solid var(--border-strong);
-      border-radius: 16px;
-      padding: 14px 20px;
-      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.6);
+      border-radius: 18px;
+      padding: 16px 24px;
+      box-shadow: var(--shadow-hover);
       backdrop-filter: blur(20px);
       -webkit-backdrop-filter: blur(20px);
       z-index: 200;
       display: none;
       flex-direction: column;
-      gap: 6px;
+      align-items: center;
+      gap: 8px;
+      overflow: hidden;
     }
 
     #presenter-prompter.is-visible {
@@ -1779,17 +1829,71 @@
     }
 
     .prompter-label {
-      font-size: 0.7rem;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr auto 1fr;
+      align-items: center;
+      gap: 10px;
+      overflow: hidden;
+    }
+
+    .prompter-ancestors-wing {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 6px;
+      overflow: hidden;
+      white-space: nowrap;
+      perspective: 420px;
+      -webkit-mask-image: linear-gradient(to right, transparent 0px, rgba(0, 0, 0, 0.25) 18px, #000 58px, #000 100%);
+      mask-image: linear-gradient(to right, transparent 0px, rgba(0, 0, 0, 0.25) 18px, #000 58px, #000 100%);
+    }
+
+    .prompter-ancestor-step {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      color: var(--text-muted);
+      font-weight: 600;
+      transform-origin: right center;
+      white-space: nowrap;
+      flex-shrink: 0;
+      transition: opacity 0.25s ease, transform 0.25s ease;
+    }
+
+    .prompter-ancestor-sep {
+      opacity: 0.65;
+      font-size: 0.8em;
+      color: var(--text-dim);
+    }
+
+    .prompter-current-card {
+      font-size: 0.92rem;
       text-transform: uppercase;
-      letter-spacing: 0.05em;
-      font-weight: 700;
-      color: var(--accent);
+      letter-spacing: 0.04em;
+      font-weight: 800;
+      color: var(--prompter-accent, var(--accent));
+      text-align: center;
+      max-width: 440px;
+      line-height: 1.3;
+      white-space: pre-wrap;
+      word-break: break-word;
+    }
+
+    .prompter-right-wing {
+      min-width: 0;
+      pointer-events: none;
     }
 
     .prompter-text {
       font-size: 0.95rem;
       color: var(--text-main);
       line-height: 1.5;
+      text-align: center;
+      width: 100%;
+      max-width: 640px;
+      white-space: pre-wrap;
+      word-break: break-word;
     }
 
     /* Right-Click Context Menu */
@@ -3943,8 +4047,28 @@
       const PORT_SIDES = ["top", "right", "bottom", "left"];
 
       function getNodePortPoint(node, dim, port) {
-        const w = (dim && dim.w) || 180;
-        const h = (dim && dim.h) || 54;
+        let w = (dim && dim.w) || 180;
+        let h = (dim && dim.h) || 54;
+        const nodeEl = node ? document.getElementById(`node-${node.id}`) : null;
+        if (state.isPresenting && nodeEl) {
+          if (nodeEl.classList.contains("is-boundary-focus")) {
+            w = w * 1.16 + 12;
+            h = h * 1.16 + 12;
+          } else if (nodeEl.classList.contains("is-spotlight")) {
+            w = w * 1.06 + 11;
+            h = h * 1.06 + 11;
+          } else if (nodeEl.classList.contains("is-boundary-peer")) {
+            w = w * 0.95 + 3;
+            h = h * 0.95 + 3;
+          } else if (nodeEl.classList.contains("is-lineage")) {
+            w = w + 7;
+            h = h + 7;
+          }
+        } else if (node && (node.shape === "plain" || node.shape === "bracket" || node.shape === "underline" || node.shape === "outline")) {
+          const extra = (nodeEl && nodeEl.classList.contains("is-selected")) ? 6 : 3;
+          w += extra;
+          h += extra;
+        }
         switch (port) {
           case "top":
             return { x: node.x, y: node.y - h / 2, nx: 0, ny: -1, port: "top" };
@@ -6635,9 +6759,28 @@
             curr = sheet.nodes.find(n => n.id === curr.parentId);
           }
 
+          if (presenterPrompter) {
+            presenterPrompter.style.setProperty("--prompter-accent", node.color || "var(--accent)");
+          }
+
+          const ancestors = breadcrumbs.slice(0, -1);
+          const currentTitle = breadcrumbs[breadcrumbs.length - 1] || "Untitled";
+
+          const ancestorsHtml = ancestors.map((ancText, idx) => {
+            // Distance from the centered active topic: 1 = immediate parent, 2 = grandparent, 3+ = older ancestors
+            const stepsBack = ancestors.length - idx;
+            const scale = Math.max(0.68, 1 - stepsBack * 0.09);
+            const opacity = Math.max(0.20, 0.82 - (stepsBack - 1) * 0.22);
+            const fontSizeRem = Math.max(0.62, 0.80 - (stepsBack - 1) * 0.06).toFixed(2);
+            const rotY = Math.min(26, stepsBack * 8);
+            const zShift = -stepsBack * 12;
+            return `<span class="prompter-ancestor-step" style="font-size:${fontSizeRem}rem; opacity:${opacity.toFixed(2)}; transform: perspective(360px) rotateY(${rotY}deg) translateZ(${zShift}px) scale(${scale.toFixed(2)});"><span>${ancText}</span><span class="prompter-ancestor-sep">›</span></span>`;
+          }).join("");
+
           prompterTitle.innerHTML = `
-            <span style="opacity:0.6; font-size:0.75rem; text-transform:none; margin-right:4px;">${breadcrumbs.slice(0, -1).join(" › ")}${breadcrumbs.length > 1 ? " › " : ""}</span>
-            <span style="color:var(--accent); font-weight:700;">${breadcrumbs[breadcrumbs.length - 1]}</span>
+            <div class="prompter-ancestors-wing">${ancestorsHtml}</div>
+            <div class="prompter-current-card">${currentTitle}</div>
+            <div class="prompter-right-wing"></div>
           `;
           prompterNotes.textContent = node.desc ? node.desc : "No lecture talking points entered for this topic. Double-click topic to add notes.";
         }
@@ -7778,6 +7921,8 @@
           generator: "MindFlow Studio",
           title: state.title,
           theme: state.theme,
+          customTheme: state.customTheme,
+          gridStyle: state.gridStyle,
           activeSheetId: state.activeSheetId,
           sheets: state.sheets,
           exportedAt: new Date().toISOString()
@@ -7802,6 +7947,8 @@
             if (data && (Array.isArray(data.sheets) || Array.isArray(data.nodes))) {
               state.title = data.title || "Imported Map";
               state.theme = data.theme || "dark";
+              state.customTheme = data.customTheme || null;
+              state.gridStyle = data.gridStyle || "dots";
 
               if (Array.isArray(data.sheets)) {
                 state.sheets = data.sheets;
@@ -7819,7 +7966,7 @@
               }
 
               document.getElementById("project-title-input").value = state.title;
-              applyTheme(state.theme);
+              applyTheme(state.theme, false, true);
               updateSheetTabs();
               updateLayoutLabel();
               pushHistory();
@@ -7866,10 +8013,16 @@
         ctx.scale(scale, scale);
         ctx.translate(-minX, -minY);
 
-        const isDark = state.theme !== "light";
+        const cs = getComputedStyle(document.body);
+        const themeBgCanvas = cs.getPropertyValue("--bg-canvas").trim() || "#090b10";
+        const themeBgSurface = cs.getPropertyValue("--bg-surface-elevated").trim() || "#161b2a";
+        const themeTextMain = cs.getPropertyValue("--text-main").trim() || "#f1f5f9";
+        const themeTextMuted = cs.getPropertyValue("--text-muted").trim() || "#94a3b8";
+        const themeAccent = cs.getPropertyValue("--accent").trim() || "#6366f1";
+        const isDark = !isHexLight(themeBgCanvas);
 
         if (!transparent) {
-          ctx.fillStyle = isDark ? "#090b10" : "#f8fafc";
+          ctx.fillStyle = themeBgCanvas;
           ctx.fillRect(minX, minY, width, height);
 
           ctx.fillStyle = isDark ? "rgba(255, 255, 255, 0.05)" : "rgba(0, 0, 0, 0.05)";
@@ -7975,12 +8128,12 @@
             ctx.shadowBlur = 15;
             ctx.shadowOffsetY = 6;
 
-            ctx.fillStyle = isDark ? "#161b2a" : "#ffffff";
+            ctx.fillStyle = themeBgSurface;
             roundRect(ctx, nx, ny, nw, nh, rad);
             ctx.fill();
             ctx.restore();
 
-            ctx.strokeStyle = isRoot ? "rgba(129, 140, 248, 0.5)" : (isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0,0,0,0.1)");
+            ctx.strokeStyle = isRoot ? themeAccent : (isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0,0,0,0.1)");
             ctx.lineWidth = isRoot ? 2 : 1;
             roundRect(ctx, nx, ny, nw, nh, rad);
             ctx.stroke();
@@ -7998,7 +8151,7 @@
             ctx.fill();
           }
 
-          ctx.fillStyle = isDark ? "#f1f5f9" : "#0f172a";
+          ctx.fillStyle = themeTextMain;
           ctx.font = isRoot ? "bold 16px 'Plus Jakarta Sans', sans-serif" : "600 13px 'Plus Jakarta Sans', sans-serif";
           ctx.textBaseline = "top";
           const leftOffset = (showAccentBar ? 24 : 10) + (node.emoji ? 20 : 0);
@@ -8010,7 +8163,7 @@
           });
 
           if (node.desc) {
-            ctx.fillStyle = isDark ? "#94a3b8" : "#475569";
+            ctx.fillStyle = themeTextMuted;
             ctx.font = "11px 'Plus Jakarta Sans', sans-serif";
             const descY = ny + (shape === "plain" ? 6 : 12) + titleLines.length * 18 + 4;
             const descLines = wrapTextLines(ctx, node.desc, Math.max(40, nw - 24));
@@ -8184,33 +8337,77 @@
         paper:   { bgCanvas: "#fdf6e3", bgSurface: "#fffdf7", textMain: "#073642", accent: "#d97706" }
       };
 
+      function isHexLight(hexColor) {
+        if (!hexColor || typeof hexColor !== "string") return false;
+        const clean = hexColor.replace("#", "").trim();
+        if (clean.length !== 6) return false;
+        const r = parseInt(clean.slice(0, 2), 16) || 0;
+        const g = parseInt(clean.slice(2, 4), 16) || 0;
+        const b = parseInt(clean.slice(4, 6), 16) || 0;
+        const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+        return luminance > 0.55;
+      }
+
       function clearCustomThemeInlineVars() {
         const props = [
-          "--bg-canvas", "--bg-surface", "--bg-surface-elevated",
-          "--text-main", "--accent", "--accent-glow",
-          "--connector-active", "--selection-outline"
+          "--bg-canvas", "--bg-grid", "--bg-surface", "--bg-surface-elevated",
+          "--bg-hover", "--border-subtle", "--border-strong",
+          "--text-main", "--text-muted", "--text-dim",
+          "--accent", "--accent-glow", "--accent-hover",
+          "--connector-color", "--connector-active", "--selection-outline",
+          "--shadow-node", "--shadow-hover", "--shadow-selected"
         ];
-        props.forEach(p => document.body.style.removeProperty(p));
+        props.forEach(p => {
+          document.body.style.removeProperty(p);
+          document.documentElement.style.removeProperty(p);
+        });
+      }
+
+      function setThemeVar(name, value) {
+        document.body.style.setProperty(name, value);
+        document.documentElement.style.setProperty(name, value);
       }
 
       function applyCustomThemeOverrides() {
-        document.body.setAttribute("data-grid", state.gridStyle || "dots");
+        const gridVal = state.gridStyle || "dots";
+        document.body.setAttribute("data-grid", gridVal);
+        document.documentElement.setAttribute("data-grid", gridVal);
         if (!state.customTheme) {
           clearCustomThemeInlineVars();
           return;
         }
         const ct = state.customTheme;
-        if (ct.bgCanvas) document.body.style.setProperty("--bg-canvas", ct.bgCanvas);
-        if (ct.bgSurface) {
-          document.body.style.setProperty("--bg-surface-elevated", ct.bgSurface);
-          document.body.style.setProperty("--bg-surface", hexToRgba(ct.bgSurface, 0.93));
+        const lightMode = isHexLight(ct.bgCanvas || ct.bgSurface || "#090b10");
+        if (ct.bgCanvas) {
+          setThemeVar("--bg-canvas", ct.bgCanvas);
+          setThemeVar("--bg-grid", lightMode ? "rgba(0, 0, 0, 0.07)" : "rgba(255, 255, 255, 0.06)");
         }
-        if (ct.textMain) document.body.style.setProperty("--text-main", ct.textMain);
+        if (ct.bgSurface) {
+          setThemeVar("--bg-surface-elevated", ct.bgSurface);
+          setThemeVar("--bg-surface", hexToRgba(ct.bgSurface, 0.94));
+          setThemeVar("--bg-hover", lightMode ? "rgba(0, 0, 0, 0.05)" : "rgba(255, 255, 255, 0.08)");
+          setThemeVar("--border-subtle", lightMode ? "rgba(0, 0, 0, 0.10)" : "rgba(255, 255, 255, 0.12)");
+          setThemeVar("--border-strong", lightMode ? "rgba(0, 0, 0, 0.22)" : "rgba(255, 255, 255, 0.24)");
+        }
+        if (ct.textMain) {
+          setThemeVar("--text-main", ct.textMain);
+          setThemeVar("--text-muted", hexToRgba(ct.textMain, 0.72));
+          setThemeVar("--text-dim", hexToRgba(ct.textMain, 0.50));
+        }
         if (ct.accent) {
-          document.body.style.setProperty("--accent", ct.accent);
-          document.body.style.setProperty("--accent-glow", hexToRgba(ct.accent, 0.35));
-          document.body.style.setProperty("--connector-active", ct.accent);
-          document.body.style.setProperty("--selection-outline", ct.accent);
+          setThemeVar("--accent", ct.accent);
+          setThemeVar("--accent-glow", hexToRgba(ct.accent, lightMode ? 0.24 : 0.35));
+          setThemeVar("--accent-hover", ct.accent);
+          setThemeVar("--connector-color", hexToRgba(ct.accent, 0.35));
+          setThemeVar("--connector-active", ct.accent);
+          setThemeVar("--selection-outline", ct.accent);
+          setThemeVar("--shadow-node", lightMode
+            ? `0 6px 20px -3px rgba(0, 0, 0, 0.09), 0 0 0 1px rgba(0, 0, 0, 0.07)`
+            : `0 10px 30px -5px rgba(0, 0, 0, 0.55), 0 0 0 1px rgba(255, 255, 255, 0.08)`);
+          setThemeVar("--shadow-hover", lightMode
+            ? `0 12px 28px -4px rgba(0, 0, 0, 0.14), 0 0 0 1px ${hexToRgba(ct.accent, 0.35)}`
+            : `0 18px 40px -6px rgba(0, 0, 0, 0.72), 0 0 0 1px ${hexToRgba(ct.accent, 0.42)}`);
+          setThemeVar("--shadow-selected", `0 0 0 2.5px ${ct.accent}, 0 12px 30px -4px ${hexToRgba(ct.accent, 0.3)}`);
         }
       }
 
@@ -8220,6 +8417,7 @@
           state.customTheme = null;
         }
         document.body.setAttribute("data-theme", state.theme);
+        document.documentElement.setAttribute("data-theme", state.theme);
         applyCustomThemeOverrides();
         updateThemeCheckmarks();
         if (!silent) {
