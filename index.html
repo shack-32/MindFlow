@@ -150,8 +150,10 @@
       top: 0;
       left: 0;
       transform-origin: 0 0;
-      will-change: transform;
       pointer-events: none;
+      -webkit-font-smoothing: antialiased;
+      -moz-osx-font-smoothing: grayscale;
+      text-rendering: geometricPrecision;
     }
 
     #connectors-svg {
@@ -161,6 +163,7 @@
       overflow: visible;
       pointer-events: none;
       z-index: 10;
+      shape-rendering: geometricPrecision;
     }
 
     #nodes-layer {
@@ -178,6 +181,7 @@
       overflow: visible;
       pointer-events: none;
       z-index: 45;
+      shape-rendering: geometricPrecision;
     }
 
     /* Marquee Box Selection */
@@ -249,10 +253,9 @@
       display: flex;
       flex-direction: column;
       gap: 6px;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
       transform-origin: center center;
-      transform: translateY(-50%);
+      -webkit-font-smoothing: antialiased;
+      text-rendering: geometricPrecision;
     }
 
     .mind-node:hover {
@@ -520,7 +523,7 @@
       outline: 2.5px dashed var(--accent) !important;
       outline-offset: 4px;
       box-shadow: 0 0 22px var(--accent-glow) !important;
-      transform: translateY(-50%) scale(1.04) !important;
+      transform: scale(1.04) !important;
     }
 
     /* Drag & Drop Reorder Line Indicator */
@@ -572,7 +575,7 @@
       opacity: 1 !important;
       filter: none !important;
       box-shadow: 0 0 0 3.5px var(--accent), 0 25px 60px -5px var(--accent-glow) !important;
-      transform: translateY(-50%) scale(1.05) !important;
+      transform: scale(1.05) !important;
       pointer-events: auto;
       z-index: 50;
     }
@@ -3161,10 +3164,9 @@
           nodeEl.className = `mind-node ${isRoot ? "is-root" : ""} ${isSelected ? "is-selected" : ""} shape-${node.shape || "card"}`;
           nodeEl.id = `node-${node.id}`;
 
-          // Anchoring at exact center: left at node.x - dims.w / 2, top at node.y with translateY(-50%)
-          nodeEl.style.left = `${node.x - dims.w / 2}px`;
-          nodeEl.style.top = `${node.y}px`;
-          nodeEl.style.transform = `translateY(-50%)`;
+          // Initial placement before DOM measurement
+          nodeEl.style.left = `${Math.round(node.x - dims.w / 2)}px`;
+          nodeEl.style.top = `${Math.round(node.y - dims.h / 2)}px`;
           nodeEl.style.width = `${dims.w}px`;
 
           if (state.isPresenting) {
@@ -3242,8 +3244,13 @@
           nodesLayer.appendChild(nodeEl);
 
           // Synchronize exact live DOM measurements so top/bottom/left/right ports align to the pixel
-          if (nodeEl.offsetWidth > 0 && nodeEl.offsetHeight > 0) {
-            nodeDimensions.set(node.id, { w: nodeEl.offsetWidth, h: nodeEl.offsetHeight });
+          // and position at integer pixel coordinates without fractional translateY(-50%) sub-pixel blur
+          const actualW = nodeEl.offsetWidth || dims.w;
+          const actualH = nodeEl.offsetHeight || dims.h;
+          if (actualW > 0 && actualH > 0) {
+            nodeDimensions.set(node.id, { w: actualW, h: actualH });
+            nodeEl.style.left = `${Math.round(node.x - actualW / 2)}px`;
+            nodeEl.style.top = `${Math.round(node.y - actualH / 2)}px`;
           }
         });
 
@@ -3921,16 +3928,18 @@
           if (sheet.layout === "freeform") {
             node.x = origNodeX + dx;
             node.y = origNodeY + dy;
-            currentEl.style.left = `${node.x - (currentEl.offsetWidth || 180) / 2}px`;
-            currentEl.style.top = `${node.y}px`;
-            currentEl.style.transform = `translateY(-50%)`;
+            const curW = currentEl.offsetWidth || 180;
+            const curH = currentEl.offsetHeight || 54;
+            currentEl.style.left = `${Math.round(node.x - curW / 2)}px`;
+            currentEl.style.top = `${Math.round(node.y - curH / 2)}px`;
+            currentEl.style.transform = "";
             updateFreeformConnectorsLive();
             updateMinimap();
             return;
           }
 
           // Fully graphical floating card following cursor
-          currentEl.style.transform = `translateY(-50%) translate(${dx}px, ${dy}px) scale(1.04)`;
+          currentEl.style.transform = `translate(${dx}px, ${dy}px) scale(1.04)`;
 
           // Detect target node underneath cursor
           const elemBelow = document.elementFromPoint(e.clientX, e.clientY);
@@ -3973,7 +3982,7 @@
           currentEl.classList.remove("is-dragging");
           currentEl.style.pointerEvents = "";
           currentEl.style.zIndex = "";
-          currentEl.style.transform = "translateY(-50%)";
+          currentEl.style.transform = "";
 
           hideDragIndicator();
           document.querySelectorAll(".mind-node").forEach(el => el.classList.remove("is-drop-target"));
