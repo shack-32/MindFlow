@@ -379,6 +379,14 @@
     }
 
     /* Node Header */
+    .node-header,
+    .node-desc,
+    .node-add-subtext-btn,
+    .node-tags-list {
+      position: relative;
+      z-index: 2;
+    }
+
     .node-header {
       display: flex;
       align-items: center;
@@ -476,6 +484,18 @@
       border: 1px solid var(--border-subtle);
     }
 
+    /* Seamless Hover Bridge so moving cursor from card to Fold or Plus (+) button never drops :hover */
+    .mind-node:hover::after {
+      content: "";
+      position: absolute;
+      top: -8px;
+      bottom: -44px;
+      left: -46px;
+      right: -46px;
+      z-index: 1;
+      pointer-events: auto;
+    }
+
     /* Node Fold/Unfold Button - Centered SVG & Hover-Reveal */
     .node-fold-btn {
       position: absolute;
@@ -493,9 +513,17 @@
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0,0,0,0.3);
       transition: opacity 0.18s ease, transform 0.18s ease, background 0.15s ease;
-      z-index: 10;
+      z-index: 12;
       opacity: 0;
       pointer-events: none;
+    }
+
+    /* Invisible hit-area cushion bridging card edge and adjacent + button */
+    .node-fold-btn::before {
+      content: "";
+      position: absolute;
+      inset: -10px -8px;
+      border-radius: 50%;
     }
 
     .node-fold-btn svg {
@@ -529,7 +557,9 @@
 
     .node-fold-btn.right-side { right: -10px; }
     .node-fold-btn.left-side { left: -10px; }
-    .node-fold-btn.bottom-side { bottom: -10px; top: auto; left: 50%; transform: translateX(-50%); }
+    .node-fold-btn.bottom-side { bottom: -10px; top: auto; left: 50%; transform: translateX(-50%) scale(0.9); }
+    .mind-node:hover .node-fold-btn.bottom-side { transform: translateX(-50%) scale(1); }
+    .node-fold-btn.bottom-side:hover { transform: translateX(-50%) scale(1.15) !important; }
 
     /* Node Add Branch (+) Button - Micro Circle with Hover-Reveal */
     .node-add-branch-btn {
@@ -548,9 +578,17 @@
       cursor: pointer;
       box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
       transition: opacity 0.18s ease, transform 0.18s ease, background 0.15s ease, color 0.15s ease;
-      z-index: 10;
+      z-index: 14;
       opacity: 0;
       pointer-events: none;
+    }
+
+    /* Invisible hit-area bridge connecting seamlessly to the fold button and card */
+    .node-add-branch-btn::before {
+      content: "";
+      position: absolute;
+      inset: -12px -10px;
+      border-radius: 50%;
     }
 
     .node-add-branch-btn svg {
@@ -573,13 +611,15 @@
     }
 
     .node-add-branch-btn.right-side { right: -11px; }
-    .node-add-branch-btn.right-side.has-fold { right: -34px; }
+    .node-add-branch-btn.right-side.has-fold { right: -33px; }
 
     .node-add-branch-btn.left-side { left: -11px; }
-    .node-add-branch-btn.left-side.has-fold { left: -34px; }
+    .node-add-branch-btn.left-side.has-fold { left: -33px; }
 
-    .node-add-branch-btn.bottom-side { bottom: -11px; top: auto; left: 50%; transform: translateX(-50%); }
-    .node-add-branch-btn.bottom-side.has-fold { bottom: -34px; }
+    .node-add-branch-btn.bottom-side { bottom: -11px; top: auto; left: 50%; transform: translateX(-50%) scale(0.9); }
+    .node-add-branch-btn.bottom-side.has-fold { bottom: -33px; }
+    .mind-node:hover .node-add-branch-btn.bottom-side { transform: translateX(-50%) scale(1); }
+    .node-add-branch-btn.bottom-side:hover { transform: translateX(-50%) scale(1.15) !important; }
 
     /* Dragging ghost & reparenting */
     .mind-node.is-dragging {
@@ -3295,6 +3335,7 @@
               </svg>
             `;
 
+            foldBtn.addEventListener("mousedown", (e) => e.stopPropagation());
             foldBtn.addEventListener("click", (e) => {
               e.stopPropagation();
               node.collapsed = !node.collapsed;
@@ -3319,6 +3360,7 @@
               </svg>
             `;
 
+            plusBtn.addEventListener("mousedown", (e) => e.stopPropagation());
             plusBtn.addEventListener("click", (e) => {
               e.stopPropagation();
               addChildNode(node.id);
