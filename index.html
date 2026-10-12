@@ -1579,14 +1579,18 @@
       top: 24px;
       left: 50%;
       transform: translateX(-50%);
+      width: max-content;
+      max-width: calc(100vw - 24px);
       display: none;
       align-items: center;
-      gap: 14px;
-      padding: 10px 22px;
+      justify-content: center;
+      gap: 10px;
+      padding: 8px 18px;
       background: var(--bg-surface-elevated);
       border: 1px solid var(--accent);
       border-radius: 999px;
       box-shadow: 0 16px 45px -5px var(--accent-glow);
+      white-space: nowrap;
       z-index: 200;
     }
 
@@ -1594,22 +1598,90 @@
       display: flex;
     }
 
+    #presenter-bar.is-visible.is-minimized {
+      display: none;
+    }
+
+    #presenter-bar .ui-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      white-space: nowrap;
+      flex-shrink: 0;
+    }
+
     .presenter-step-info {
       font-size: 0.86rem;
       font-weight: 600;
       color: var(--text-main);
-      display: flex;
+      display: inline-flex;
       align-items: center;
-      gap: 8px;
+      justify-content: center;
+      text-align: center;
+      white-space: nowrap;
+      gap: 10px;
+      padding: 0 4px;
     }
 
     .presenter-pill {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      white-space: nowrap;
       background: var(--accent);
       color: white;
-      padding: 3px 10px;
+      padding: 4px 12px;
       border-radius: 999px;
       font-size: 0.75rem;
       font-weight: 700;
+      line-height: 1.2;
+    }
+
+    #presenter-counter {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      white-space: nowrap;
+      min-width: 90px;
+    }
+
+    /* Minimized Presenter Restore Pill */
+    #presenter-minimized-pill {
+      position: absolute;
+      top: 14px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: max-content;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      padding: 6px 14px;
+      background: var(--bg-surface-elevated);
+      border: 1px solid var(--border-strong);
+      border-radius: 999px;
+      box-shadow: 0 10px 28px rgba(0, 0, 0, 0.45);
+      color: var(--text-main);
+      font-size: 0.76rem;
+      font-weight: 600;
+      white-space: nowrap;
+      cursor: pointer;
+      z-index: 200;
+      opacity: 0.78;
+      transition: opacity 0.18s ease, border-color 0.18s ease, transform 0.18s ease;
+    }
+
+    #presenter-minimized-pill:hover {
+      opacity: 1;
+      border-color: var(--accent);
+      transform: translateX(-50%) translateY(1px);
+    }
+
+    #presenter-minimized-pill.is-visible {
+      display: inline-flex;
     }
 
     /* Educational Teleprompter Script Card */
@@ -2422,11 +2494,23 @@
         <span>Prompter</span>
       </button>
 
+      <button class="ui-btn" id="btn-minimize-presenter" title="Minimize Presenter Bar">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><polyline points="18 15 12 9 6 15"/></svg>
+        <span>Minimize</span>
+      </button>
+
       <button class="ui-btn" id="btn-exit-presenter" title="Exit Presentation (Esc)">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
         <span>Exit</span>
       </button>
     </div>
+
+    <!-- Minimized Presenter Bar Restore Pill -->
+    <button id="presenter-minimized-pill" title="Show Presenter Controls">
+      <span class="presenter-pill" style="padding:2px 8px; font-size:0.68rem;">Presenter</span>
+      <span id="presenter-minimized-counter">Topic 1 of 12</span>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px; height:14px;"><polyline points="6 9 12 15 18 9"/></svg>
+    </button>
 
     <!-- Educational Teleprompter Script Card -->
     <div id="presenter-prompter">
@@ -5499,12 +5583,25 @@
       // =========================================================================
       // EDUCATIONAL PRESENTER & SPOTLIGHT MODE
       // =========================================================================
+      function setPresenterBarMinimized(minimized) {
+        state.isPresenterBarMinimized = Boolean(minimized);
+        const minPill = document.getElementById("presenter-minimized-pill");
+        if (state.isPresenting) {
+          presenterBar.classList.toggle("is-minimized", state.isPresenterBarMinimized);
+          if (minPill) minPill.classList.toggle("is-visible", state.isPresenterBarMinimized);
+        } else {
+          presenterBar.classList.remove("is-minimized");
+          if (minPill) minPill.classList.remove("is-visible");
+        }
+      }
+
       function togglePresenterMode() {
         state.isPresenting = !state.isPresenting;
         document.body.classList.toggle("is-presenting", state.isPresenting);
         document.body.classList.toggle("is-cinematic", state.isPresenting && state.isCinematic);
         presenterBar.classList.toggle("is-visible", state.isPresenting);
         presenterPrompter.classList.toggle("is-visible", state.isPresenting && state.showPrompter);
+        setPresenterBarMinimized(false);
 
         if (state.isPresenting) {
           state.presentationOrder = buildPresentationOrder("root");
@@ -6996,6 +7093,12 @@
       document.getElementById("btn-present-next").addEventListener("click", nextPresentationStep);
       document.getElementById("btn-present-prev").addEventListener("click", prevPresentationStep);
       document.getElementById("btn-exit-presenter").addEventListener("click", togglePresenterMode);
+      document.getElementById("btn-minimize-presenter")?.addEventListener("click", () => {
+        setPresenterBarMinimized(true);
+      });
+      document.getElementById("presenter-minimized-pill")?.addEventListener("click", () => {
+        setPresenterBarMinimized(false);
+      });
 
       document.getElementById("btn-toggle-prompter").addEventListener("click", () => {
         state.showPrompter = !state.showPrompter;
