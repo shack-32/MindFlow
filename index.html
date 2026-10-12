@@ -287,24 +287,95 @@
       letter-spacing: -0.015em;
     }
 
-    /* Node Shapes */
+    /* Node Shapes / Bubble Styles */
     .mind-node.shape-pill {
       border-radius: 999px;
       padding: 8px 20px;
     }
 
+    /* Plain Text only (no box, no border, no accent bar) */
+    .mind-node.shape-plain {
+      background: transparent !important;
+      box-shadow: none !important;
+      border: 1px solid transparent !important;
+      border-radius: 8px;
+      padding: 4px 8px;
+      min-width: 40px;
+    }
+
+    .mind-node.shape-plain .node-accent-bar {
+      display: none;
+    }
+
+    .mind-node.shape-plain:hover {
+      background: rgba(148, 163, 184, 0.06) !important;
+      border-color: rgba(148, 163, 184, 0.25) !important;
+      box-shadow: none !important;
+    }
+
+    .mind-node.shape-plain.is-selected {
+      background: rgba(99, 102, 241, 0.08) !important;
+      border: 1px dashed var(--selection-outline) !important;
+      box-shadow: none !important;
+    }
+
+    /* Underline style */
     .mind-node.shape-underline {
-      background: transparent;
-      box-shadow: none;
-      border: none;
-      border-bottom: 2px solid var(--border-strong);
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+      border-bottom: 2.5px solid var(--node-color, var(--border-strong)) !important;
       border-radius: 0;
-      padding: 6px 12px;
+      padding: 6px 10px;
+      min-width: 60px;
+    }
+
+    .mind-node.shape-underline .node-accent-bar {
+      display: none;
     }
 
     .mind-node.shape-underline.is-selected {
-      border-bottom-color: var(--accent);
-      box-shadow: none;
+      border-bottom-color: var(--selection-outline) !important;
+      background: rgba(99, 102, 241, 0.06) !important;
+      box-shadow: none !important;
+    }
+
+    /* Wireframe Outline style */
+    .mind-node.shape-outline {
+      background: transparent !important;
+      box-shadow: none !important;
+      border: 2px solid var(--node-color, var(--border-strong)) !important;
+      border-radius: 12px;
+      padding: 9px 16px;
+    }
+
+    .mind-node.shape-outline .node-accent-bar {
+      display: none;
+    }
+
+    .mind-node.shape-outline.is-selected {
+      border-color: var(--selection-outline) !important;
+      box-shadow: 0 0 0 2px var(--accent-glow) !important;
+    }
+
+    /* Minimal Side Bracket style */
+    .mind-node.shape-bracket {
+      background: transparent !important;
+      box-shadow: none !important;
+      border: none !important;
+      border-left: 3.5px solid var(--node-color, var(--accent)) !important;
+      border-radius: 3px;
+      padding: 5px 12px;
+      min-width: 60px;
+    }
+
+    .mind-node.shape-bracket .node-accent-bar {
+      display: none;
+    }
+
+    .mind-node.shape-bracket.is-selected {
+      background: rgba(99, 102, 241, 0.07) !important;
+      box-shadow: none !important;
     }
 
     /* Node Header */
@@ -1971,10 +2042,21 @@
         <div class="color-swatch" data-color="#64748b" style="background:#64748b" title="Slate"></div>
       </div>
 
+      <div class="toolbar-divider" id="inspector-shape-divider"></div>
+
+      <div id="inspector-shape-group" style="display:flex; align-items:center; gap:3px; background:rgba(255,255,255,0.04); padding:2px; border-radius:8px; border:1px solid var(--border-subtle);" title="Bubble / Node Style">
+        <button class="ui-btn inspector-shape-btn" data-shape="card" style="padding:4px 7px; font-size:0.72rem;" title="Card Style">Card</button>
+        <button class="ui-btn inspector-shape-btn" data-shape="pill" style="padding:4px 7px; font-size:0.72rem;" title="Pill Capsule Style">Pill</button>
+        <button class="ui-btn inspector-shape-btn" data-shape="plain" style="padding:4px 7px; font-size:0.72rem;" title="Plain Text Only (No Box)">Plain</button>
+        <button class="ui-btn inspector-shape-btn" data-shape="underline" style="padding:4px 7px; font-size:0.72rem;" title="Bottom Underline Style">Line</button>
+        <button class="ui-btn inspector-shape-btn" data-shape="outline" style="padding:4px 7px; font-size:0.72rem;" title="Wireframe Outline Style">Outline</button>
+        <button class="ui-btn inspector-shape-btn" data-shape="bracket" style="padding:4px 7px; font-size:0.72rem;" title="Minimal Side Bracket Style">Bracket</button>
+      </div>
+
       <div class="toolbar-divider"></div>
 
       <button class="ui-btn" id="inspector-btn-bnd-settings" style="display:none;" title="Boundary Advanced Settings">
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>Settings</span>
       </button>
 
@@ -2117,11 +2199,14 @@
         </div>
 
         <div class="form-group">
-          <label class="form-label">Card Style</label>
-          <div style="display:flex; gap:8px;">
-            <button class="ui-btn" id="btn-shape-card" style="border:1px solid var(--border-strong);">Card</button>
-            <button class="ui-btn" id="btn-shape-pill" style="border:1px solid var(--border-strong);">Pill</button>
-            <button class="ui-btn" id="btn-shape-underline" style="border:1px solid var(--border-strong);">Underline</button>
+          <label class="form-label">Bubble / Card Style</label>
+          <div style="display:flex; gap:8px; flex-wrap:wrap;" id="details-shape-btn-group">
+            <button class="ui-btn" id="btn-shape-card" data-shape="card" style="border:1px solid var(--border-strong);">Card</button>
+            <button class="ui-btn" id="btn-shape-pill" data-shape="pill" style="border:1px solid var(--border-strong);">Pill</button>
+            <button class="ui-btn" id="btn-shape-plain" data-shape="plain" style="border:1px solid var(--border-strong);">Plain Text</button>
+            <button class="ui-btn" id="btn-shape-underline" data-shape="underline" style="border:1px solid var(--border-strong);">Underline</button>
+            <button class="ui-btn" id="btn-shape-outline" data-shape="outline" style="border:1px solid var(--border-strong);">Outline</button>
+            <button class="ui-btn" id="btn-shape-bracket" data-shape="bracket" style="border:1px solid var(--border-strong);">Bracket</button>
           </div>
         </div>
 
@@ -3163,6 +3248,7 @@
           const nodeEl = document.createElement("div");
           nodeEl.className = `mind-node ${isRoot ? "is-root" : ""} ${isSelected ? "is-selected" : ""} shape-${node.shape || "card"}`;
           nodeEl.id = `node-${node.id}`;
+          nodeEl.style.setProperty("--node-color", node.color || "#6366f1");
 
           // Initial placement before DOM measurement
           nodeEl.style.left = `${Math.round(node.x - dims.w / 2)}px`;
@@ -5006,7 +5092,7 @@
       // IN-PLACE TOPIC DETAILS & NOTES MODAL
       // =========================================================================
       function openDetailsModal(specifiedNodeId) {
-        if (specifiedNodeId) {
+        if (specifiedNodeId && typeof specifiedNodeId === "string") {
           state.selectedNodeId = specifiedNodeId;
           state.selectedNodeIds.clear();
           state.selectedNodeIds.add(specifiedNodeId);
@@ -5020,6 +5106,11 @@
 
         document.querySelectorAll(".emoji-choice-btn").forEach(btn => {
           btn.classList.toggle("is-active", btn.dataset.emoji === (node.emoji || ""));
+        });
+
+        const curShape = node.shape || "card";
+        document.querySelectorAll("#details-shape-btn-group [data-shape]").forEach(btn => {
+          btn.classList.toggle("is-active", btn.dataset.shape === curShape);
         });
 
         detailsModal.classList.add("is-open");
@@ -5053,18 +5144,36 @@
         detailsModal.classList.remove("is-open");
       });
 
-      document.getElementById("btn-shape-card").addEventListener("click", () => setNodeShape("card"));
-      document.getElementById("btn-shape-pill").addEventListener("click", () => setNodeShape("pill"));
-      document.getElementById("btn-shape-underline").addEventListener("click", () => setNodeShape("underline"));
+      const SHAPE_LABELS = {
+        card: "Card",
+        pill: "Pill",
+        plain: "Plain Text",
+        underline: "Underline",
+        outline: "Outline",
+        bracket: "Bracket"
+      };
+
+      document.querySelectorAll("#details-shape-btn-group [data-shape]").forEach(btn => {
+        btn.addEventListener("click", () => setNodeShape(btn.dataset.shape));
+      });
+
+      document.querySelectorAll(".inspector-shape-btn").forEach(btn => {
+        btn.addEventListener("click", () => setNodeShape(btn.dataset.shape));
+      });
 
       function setNodeShape(shapeName) {
         const sheet = getActiveSheet();
-        const node = sheet.nodes.find(n => n.id === state.selectedNodeId);
-        if (node) {
-          node.shape = shapeName;
+        const targets = state.selectedNodeIds.size > 0
+          ? sheet.nodes.filter(n => state.selectedNodeIds.has(n.id))
+          : sheet.nodes.filter(n => n.id === state.selectedNodeId);
+        if (targets.length > 0) {
+          targets.forEach(n => { n.shape = shapeName; });
+          document.querySelectorAll("#details-shape-btn-group [data-shape], .inspector-shape-btn").forEach(btn => {
+            btn.classList.toggle("is-active", btn.dataset.shape === shapeName);
+          });
           pushHistory();
           render();
-          showToast(`Shape: ${shapeName}`);
+          showToast(`Style: ${SHAPE_LABELS[shapeName] || shapeName}`);
         }
       }
 
@@ -5197,6 +5306,9 @@
           return;
         }
 
+        const shapeGroupEl = document.getElementById("inspector-shape-group");
+        const shapeDividerEl = document.getElementById("inspector-shape-divider");
+
         if (state.selectedBoundaryId) {
           const bnd = (sheet.boundaries || []).find(b => b.id === state.selectedBoundaryId);
           if (!bnd) {
@@ -5210,6 +5322,8 @@
             swatch.classList.toggle("is-selected", swatch.dataset.color === bnd.color);
           });
 
+          if (shapeGroupEl) shapeGroupEl.style.display = "none";
+          if (shapeDividerEl) shapeDividerEl.style.display = "none";
           document.getElementById("inspector-btn-boundary").style.display = "none";
           document.getElementById("inspector-btn-edit-details").style.display = "none";
           document.getElementById("inspector-btn-toggle-fold").style.display = "none";
@@ -5224,6 +5338,8 @@
         const bndSettingsBtn = document.getElementById("inspector-btn-bnd-settings");
         if (bndSettingsBtn) bndSettingsBtn.style.display = "none";
 
+        if (shapeGroupEl) shapeGroupEl.style.display = "flex";
+        if (shapeDividerEl) shapeDividerEl.style.display = "block";
         document.getElementById("inspector-btn-boundary").style.display = "flex";
         document.getElementById("inspector-btn-edit-details").style.display = "flex";
         document.getElementById("inspector-btn-toggle-fold").style.display = "flex";
@@ -5239,6 +5355,11 @@
 
         document.querySelectorAll(".color-swatch").forEach(swatch => {
           swatch.classList.toggle("is-selected", swatch.dataset.color === selected.color);
+        });
+
+        const activeShape = selected.shape || "card";
+        document.querySelectorAll(".inspector-shape-btn").forEach(btn => {
+          btn.classList.toggle("is-active", btn.dataset.shape === activeShape);
         });
 
         const foldBtn = document.getElementById("inspector-btn-toggle-fold");
@@ -5657,28 +5778,63 @@
           const nh = nodeEl.offsetHeight;
           const nx = node.x - nw / 2;
           const ny = node.y - nh / 2;
+          const shape = node.shape || "card";
+          const nodeColor = node.color || "#6366f1";
 
-          ctx.save();
-          ctx.shadowColor = isDark ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0.08)";
-          ctx.shadowBlur = 15;
-          ctx.shadowOffsetY = 6;
+          if (shape === "plain") {
+            // Plain text only: no box, no border, no accent bar
+          } else if (shape === "underline") {
+            ctx.save();
+            ctx.strokeStyle = nodeColor;
+            ctx.lineWidth = 2.5;
+            ctx.beginPath();
+            ctx.moveTo(nx, ny + nh);
+            ctx.lineTo(nx + nw, ny + nh);
+            ctx.stroke();
+            ctx.restore();
+          } else if (shape === "bracket") {
+            ctx.save();
+            ctx.strokeStyle = nodeColor;
+            ctx.lineWidth = 3.5;
+            ctx.beginPath();
+            ctx.moveTo(nx, ny + 2);
+            ctx.lineTo(nx, ny + nh - 2);
+            ctx.stroke();
+            ctx.restore();
+          } else if (shape === "outline") {
+            ctx.save();
+            ctx.strokeStyle = nodeColor;
+            ctx.lineWidth = 2;
+            roundRect(ctx, nx, ny, nw, nh, 12);
+            ctx.stroke();
+            ctx.restore();
+          } else {
+            // Card or Pill
+            const rad = shape === "pill" ? Math.min(nw, nh) / 2 : (isRoot ? 16 : 12);
+            ctx.save();
+            ctx.shadowColor = isDark ? "rgba(0,0,0,0.5)" : "rgba(0,0,0,0.08)";
+            ctx.shadowBlur = 15;
+            ctx.shadowOffsetY = 6;
 
-          ctx.fillStyle = isDark ? "#161b2a" : "#ffffff";
-          roundRect(ctx, nx, ny, nw, nh, isRoot ? 16 : 12);
-          ctx.fill();
-          ctx.restore();
+            ctx.fillStyle = isDark ? "#161b2a" : "#ffffff";
+            roundRect(ctx, nx, ny, nw, nh, rad);
+            ctx.fill();
+            ctx.restore();
 
-          ctx.strokeStyle = isRoot ? "rgba(129, 140, 248, 0.5)" : (isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0,0,0,0.1)");
-          ctx.lineWidth = isRoot ? 2 : 1;
-          roundRect(ctx, nx, ny, nw, nh, isRoot ? 16 : 12);
-          ctx.stroke();
+            ctx.strokeStyle = isRoot ? "rgba(129, 140, 248, 0.5)" : (isDark ? "rgba(255, 255, 255, 0.12)" : "rgba(0,0,0,0.1)");
+            ctx.lineWidth = isRoot ? 2 : 1;
+            roundRect(ctx, nx, ny, nw, nh, rad);
+            ctx.stroke();
+          }
 
+          const showAccentBar = (shape === "card" || shape === "pill");
           if (node.emoji) {
             ctx.font = "16px sans-serif";
             ctx.textBaseline = "middle";
-            ctx.fillText(node.emoji, nx + 12, ny + 20);
-          } else {
-            ctx.fillStyle = node.color || "#6366f1";
+            ctx.fillText(node.emoji, nx + (showAccentBar ? 20 : 10), ny + 20);
+          }
+          if (showAccentBar) {
+            ctx.fillStyle = nodeColor;
             roundRect(ctx, nx + 12, ny + 11, 4, 18, 2);
             ctx.fill();
           }
@@ -5686,20 +5842,21 @@
           ctx.fillStyle = isDark ? "#f1f5f9" : "#0f172a";
           ctx.font = isRoot ? "bold 16px 'Plus Jakarta Sans', sans-serif" : "600 13px 'Plus Jakarta Sans', sans-serif";
           ctx.textBaseline = "top";
-          const titleX = nx + (node.emoji ? 32 : 24);
-          const titleMaxW = nw - (node.emoji ? 44 : 36);
+          const leftOffset = (showAccentBar ? 24 : 10) + (node.emoji ? 20 : 0);
+          const titleX = nx + leftOffset;
+          const titleMaxW = Math.max(40, nw - leftOffset - 12);
           const titleLines = wrapTextLines(ctx, node.text || "Untitled", titleMaxW);
           titleLines.forEach((line, idx) => {
-            ctx.fillText(line, titleX, ny + 12 + idx * 18);
+            ctx.fillText(line, titleX, ny + (shape === "plain" ? 6 : 12) + idx * 18);
           });
 
           if (node.desc) {
             ctx.fillStyle = isDark ? "#94a3b8" : "#475569";
             ctx.font = "11px 'Plus Jakarta Sans', sans-serif";
-            const descY = ny + 12 + titleLines.length * 18 + 4;
-            const descLines = wrapTextLines(ctx, node.desc, nw - 32);
+            const descY = ny + (shape === "plain" ? 6 : 12) + titleLines.length * 18 + 4;
+            const descLines = wrapTextLines(ctx, node.desc, Math.max(40, nw - 24));
             descLines.forEach((dLine, dIdx) => {
-              ctx.fillText(dLine, nx + 16, descY + dIdx * 15);
+              ctx.fillText(dLine, nx + (shape === "plain" ? 8 : 16), descY + dIdx * 15);
             });
           }
         });
@@ -5784,13 +5941,27 @@
           const h = el ? el.offsetHeight : 46;
           const x = n.x - w / 2;
           const y = n.y - h / 2;
+          const shape = n.shape || "card";
+          const col = n.color || "#6366f1";
 
           svgContent += `<g transform="translate(${x}, ${y})">\n`;
-          svgContent += `  <rect class="node-box" width="${w}" height="${h}" />\n`;
-          svgContent += `  <rect x="12" y="12" width="4" height="18" rx="2" fill="${n.color || '#6366f1'}" />\n`;
-          svgContent += `  <text class="title" x="24" y="25">${escapeHtml(n.text)}</text>\n`;
+          if (shape === "plain") {
+            // No background box for plain text
+          } else if (shape === "underline") {
+            svgContent += `  <line x1="0" y1="${h}" x2="${w}" y2="${h}" stroke="${col}" stroke-width="2.5" />\n`;
+          } else if (shape === "bracket") {
+            svgContent += `  <line x1="0" y1="2" x2="0" y2="${h - 2}" stroke="${col}" stroke-width="3.5" />\n`;
+          } else if (shape === "outline") {
+            svgContent += `  <rect width="${w}" height="${h}" rx="12" fill="none" stroke="${col}" stroke-width="2" />\n`;
+          } else {
+            const rxVal = shape === "pill" ? Math.round(h / 2) : 12;
+            svgContent += `  <rect class="node-box" width="${w}" height="${h}" rx="${rxVal}" />\n`;
+            svgContent += `  <rect x="12" y="12" width="4" height="18" rx="2" fill="${col}" />\n`;
+          }
+          const textX = (shape === "card" || shape === "pill") ? 24 : 10;
+          svgContent += `  <text class="title" x="${textX}" y="25">${escapeHtml(n.text)}</text>\n`;
           if (n.desc) {
-            svgContent += `  <text class="desc" x="24" y="42">${escapeHtml(n.desc)}</text>\n`;
+            svgContent += `  <text class="desc" x="${textX}" y="42">${escapeHtml(n.desc)}</text>\n`;
           }
           svgContent += `</g>\n`;
         });
