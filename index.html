@@ -537,6 +537,7 @@
       font-weight: 600;
       line-height: 1.35;
       color: var(--text-main);
+      white-space: pre-wrap;
       word-break: break-word;
       outline: none;
       border-radius: 4px;
@@ -556,6 +557,7 @@
       color: var(--text-muted);
       line-height: 1.45;
       font-weight: 400;
+      white-space: pre-wrap;
       word-break: break-word;
       outline: none;
       padding: 2px 4px;
@@ -2144,6 +2146,11 @@
       color: var(--text-dim);
     }
 
+    input, textarea, .form-input, .form-textarea {
+      user-select: text;
+      -webkit-user-select: text;
+    }
+
     .form-input, .form-textarea {
       background: rgba(255, 255, 255, 0.06);
       border: 1px solid var(--border-strong);
@@ -2928,7 +2935,7 @@
 
         <div class="form-group">
           <div style="display:flex; justify-content:space-between; align-items:center;">
-            <label class="form-label" style="margin-bottom:0;">Icon / Emoji Badge</label>
+            <label class="form-label" style="margin-bottom:0; display:inline-flex; align-items:center; gap:6px;">Icon / Emoji Badge <span id="details-modal-emoji-preview" style="font-size:1.1rem; line-height:1;"></span></label>
             <div style="display:flex; align-items:center; gap:6px;">
               <input type="text" id="input-custom-emoji" class="form-input" placeholder="Any device emoji..." title="Type or paste any emoji from your device (Press Win + . on Windows or Cmd + Ctrl + Space on Mac)" style="width:140px; padding:4px 8px; font-size:0.82rem; height:28px;" />
               <button type="button" class="ui-btn" id="btn-trigger-os-emoji" title="Focus box &amp; press Win + . (Windows) or Cmd + Ctrl + Space (Mac) to open your device's full emoji keyboard" style="padding:3px 8px; font-size:0.72rem; height:28px; border:1px solid var(--border-strong);">😊 Device Emoji (Win+.)</button>
@@ -5407,6 +5414,14 @@
         render();
       }
 
+      function normalizeMultilineText(raw) {
+        return String(raw || "")
+          .replace(/\r\n/g, "\n")
+          .replace(/\r/g, "\n")
+          .replace(/\n{3,}/g, "\n\n")
+          .replace(/^[ \t\n]+|[ \t\n]+$/g, "");
+      }
+
       function startEditingNode(nodeId) {
         const titleEl = document.querySelector(`.node-title[data-node-id="${nodeId}"]`);
         if (!titleEl) return;
@@ -5435,7 +5450,7 @@
           const sheet = getActiveSheet();
           const node = sheet.nodes.find(n => n.id === nodeId);
           if (node) {
-            const newText = titleEl.innerText.trim();
+            const newText = normalizeMultilineText(titleEl.innerText);
             if (newText && newText !== node.text) {
               node.text = newText;
               pushHistory();
@@ -5450,14 +5465,14 @@
           if (e.key === "Enter" && !e.shiftKey) {
             e.preventDefault();
             titleEl.blur();
-          } else if (e.key === "Tab" || (e.key === "Enter" && e.shiftKey)) {
+          } else if (e.key === "Tab") {
             e.preventDefault();
             isDone = true;
             titleEl.contentEditable = "false";
             const sheet = getActiveSheet();
             const node = sheet.nodes.find(n => n.id === nodeId);
             if (node) {
-              const newText = titleEl.innerText.trim();
+              const newText = normalizeMultilineText(titleEl.innerText);
               if (newText && newText !== node.text) {
                 node.text = newText;
                 pushHistory();
@@ -5514,7 +5529,7 @@
           if (isDone) return;
           isDone = true;
           descEl.contentEditable = "false";
-          const newDesc = descEl.innerText.trim();
+          const newDesc = normalizeMultilineText(descEl.innerText);
           if (newDesc !== (node.desc || "")) {
             node.desc = newDesc;
             pushHistory();
@@ -6953,6 +6968,25 @@
         }
       }
 
+      let currentEditingDetailsNodeId = null;
+      let currentDetailsEmojiValue = "";
+
+      function syncDetailsEmojiUI(val) {
+        const clean = (val || "").trim();
+        currentDetailsEmojiValue = clean;
+        const customEmojiInput = document.getElementById("input-custom-emoji");
+        if (customEmojiInput && customEmojiInput.value !== clean) {
+          customEmojiInput.value = clean;
+        }
+        const previewBadge = document.getElementById("details-modal-emoji-preview");
+        if (previewBadge) {
+          previewBadge.textContent = clean;
+        }
+        document.querySelectorAll("#emoji-picker-row .emoji-choice-btn").forEach(b => {
+          b.classList.toggle("is-active", b.dataset.emoji === clean);
+        });
+      }
+
       function openDetailsModal(specifiedNodeId) {
         if (specifiedNodeId && typeof specifiedNodeId === "string") {
           state.selectedNodeId = specifiedNodeId;
@@ -6960,23 +6994,17 @@
           state.selectedNodeIds.add(specifiedNodeId);
         }
         const sheet = getActiveSheet();
-        const node = sheet.nodes.find(n => n.id === state.selectedNodeId);
+        const fallbackId = state.selectedNodeId || (state.selectedNodeIds.size > 0 ? Array.from(state.selectedNodeIds)[0] : "root");
+        const node = sheet.nodes.find(n => n.id === fallbackId);
         if (!node) return;
+
+        currentEditingDetailsNodeId = node.id;
+        state.selectedNodeId = node.id;
 
         document.getElementById("input-node-desc").value = node.desc || "";
         document.getElementById("input-node-tags").value = (node.tags || []).join(", ");
 
-        let matchedEmojiPreset = false;
-        document.querySelectorAll("#emoji-picker-row .emoji-choice-btn").forEach(btn => {
-          const isMatch = btn.dataset.emoji === (node.emoji || "");
-          if (isMatch) matchedEmojiPreset = true;
-          btn.classList.toggle("is-active", isMatch);
-        });
-        const customEmojiInput = document.getElementById("input-custom-emoji");
-        if (customEmojiInput) {
-          customEmojiInput.value = node.emoji || "";
-        }
-
+        syncDetailsEmojiUI(node.emoji || "");
         syncDetailsImagePreview(node);
 
         const curShape = node.shape || "card";
@@ -6989,21 +7017,43 @@
 
       document.querySelectorAll("#emoji-picker-row .emoji-choice-btn").forEach(btn => {
         btn.addEventListener("click", () => {
-          document.querySelectorAll("#emoji-picker-row .emoji-choice-btn").forEach(b => b.classList.remove("is-active"));
-          btn.classList.add("is-active");
-          const customEmojiInput = document.getElementById("input-custom-emoji");
-          if (customEmojiInput) {
-            customEmojiInput.value = btn.dataset.emoji || "";
-          }
+          syncDetailsEmojiUI(btn.dataset.emoji || "");
         });
       });
 
-      document.getElementById("input-custom-emoji")?.addEventListener("input", (e) => {
-        const val = e.target.value.trim();
-        document.querySelectorAll("#emoji-picker-row .emoji-choice-btn").forEach(b => {
-          b.classList.toggle("is-active", b.dataset.emoji === val);
+      const customEmojiInputEl = document.getElementById("input-custom-emoji");
+      if (customEmojiInputEl) {
+        customEmojiInputEl.addEventListener("focus", () => {
+          setTimeout(() => customEmojiInputEl.select(), 0);
         });
-      });
+        customEmojiInputEl.addEventListener("paste", (e) => {
+          const pasted = (e.clipboardData || window.clipboardData)?.getData("text");
+          if (typeof pasted === "string" && pasted.trim()) {
+            e.preventDefault();
+            e.stopPropagation();
+            const val = pasted.trim();
+            customEmojiInputEl.value = val;
+            syncDetailsEmojiUI(val);
+          }
+        });
+        ["input", "change", "keyup", "compositionend"].forEach(evtName => {
+          customEmojiInputEl.addEventListener(evtName, (e) => {
+            const val = e.target.value.trim();
+            currentDetailsEmojiValue = val;
+            const previewBadge = document.getElementById("details-modal-emoji-preview");
+            if (previewBadge) previewBadge.textContent = val;
+            document.querySelectorAll("#emoji-picker-row .emoji-choice-btn").forEach(b => {
+              b.classList.toggle("is-active", b.dataset.emoji === val);
+            });
+          });
+        });
+        customEmojiInputEl.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            document.getElementById("btn-save-details")?.click();
+          }
+        });
+      }
 
       document.getElementById("btn-trigger-os-emoji")?.addEventListener("click", () => {
         const customEmojiInput = document.getElementById("input-custom-emoji");
@@ -7020,7 +7070,8 @@
 
       document.getElementById("btn-details-remove-image")?.addEventListener("click", () => {
         const sheet = getActiveSheet();
-        const node = sheet.nodes.find(n => n.id === state.selectedNodeId);
+        const targetId = currentEditingDetailsNodeId || state.selectedNodeId;
+        const node = sheet.nodes.find(n => n.id === targetId);
         if (node) {
           delete node.image;
           delete node.imageW;
@@ -7032,23 +7083,45 @@
         }
       });
 
-      document.getElementById("btn-save-details").addEventListener("click", () => {
-        const sheet = getActiveSheet();
-        const node = sheet.nodes.find(n => n.id === state.selectedNodeId);
-        if (node) {
-          node.desc = document.getElementById("input-node-desc").value.trim();
-          const tagsStr = document.getElementById("input-node-tags").value;
-          node.tags = tagsStr ? tagsStr.split(",").map(t => t.trim()).filter(Boolean) : [];
+      const saveDetailsBtnEl = document.getElementById("btn-save-details");
+      if (saveDetailsBtnEl) {
+        // Commit any active IME composition or focused emoji input before click fires
+        saveDetailsBtnEl.addEventListener("mousedown", () => {
+          const emojiInput = document.getElementById("input-custom-emoji");
+          if (emojiInput && document.activeElement === emojiInput) {
+            currentDetailsEmojiValue = emojiInput.value.trim();
+            emojiInput.blur();
+          }
+        });
 
-          const customEmojiVal = document.getElementById("input-custom-emoji")?.value.trim();
-          const activeEmojiBtn = document.querySelector("#emoji-picker-row .emoji-choice-btn.is-active");
-          node.emoji = customEmojiVal !== undefined ? customEmojiVal : (activeEmojiBtn ? activeEmojiBtn.dataset.emoji : "");
+        saveDetailsBtnEl.addEventListener("click", () => {
+          const sheet = getActiveSheet();
+          const targetId = currentEditingDetailsNodeId || state.selectedNodeId;
+          const node = sheet.nodes.find(n => n.id === targetId);
+          if (node) {
+            node.desc = normalizeMultilineText(document.getElementById("input-node-desc").value);
+            const tagsStr = document.getElementById("input-node-tags").value;
+            node.tags = tagsStr ? tagsStr.split(",").map(t => t.trim()).filter(Boolean) : [];
 
-          pushHistory();
-          render();
-        }
-        detailsModal.classList.remove("is-open");
-      });
+            const rawInputVal = document.getElementById("input-custom-emoji")?.value.trim();
+            const activeEmojiBtn = document.querySelector("#emoji-picker-row .emoji-choice-btn.is-active");
+            const resolvedEmoji = (rawInputVal !== undefined && rawInputVal !== "")
+              ? rawInputVal
+              : (currentDetailsEmojiValue !== "" ? currentDetailsEmojiValue : (activeEmojiBtn ? activeEmojiBtn.dataset.emoji : ""));
+
+            node.emoji = resolvedEmoji;
+            if (state.selectedNodeIds.size > 1 && state.selectedNodeIds.has(node.id)) {
+              sheet.nodes.forEach(n => {
+                if (state.selectedNodeIds.has(n.id)) n.emoji = resolvedEmoji;
+              });
+            }
+
+            pushHistory();
+            render();
+          }
+          detailsModal.classList.remove("is-open");
+        });
+      }
 
       document.getElementById("btn-close-details").addEventListener("click", () => {
         detailsModal.classList.remove("is-open");
@@ -7719,14 +7792,44 @@
 
       const bndCustomEmojiEl = document.getElementById("bnd-custom-emoji");
       if (bndCustomEmojiEl) {
-        bndCustomEmojiEl.addEventListener("input", () => {
-          const val = bndCustomEmojiEl.value.trim();
-          document.getElementById("bnd-modal-icon-badge").textContent = val || "🏷️";
-          document.querySelectorAll("#bnd-emoji-picker-row .emoji-choice-btn").forEach(b => {
-            b.classList.toggle("is-active", b.dataset.bndEmoji === val);
+        bndCustomEmojiEl.addEventListener("focus", () => {
+          setTimeout(() => bndCustomEmojiEl.select(), 0);
+        });
+        bndCustomEmojiEl.addEventListener("paste", (e) => {
+          const pasted = (e.clipboardData || window.clipboardData)?.getData("text");
+          if (typeof pasted === "string" && pasted.trim()) {
+            e.preventDefault();
+            e.stopPropagation();
+            const val = pasted.trim();
+            bndCustomEmojiEl.value = val;
+            document.getElementById("bnd-modal-icon-badge").textContent = val || "🏷️";
+            document.querySelectorAll("#bnd-emoji-picker-row .emoji-choice-btn").forEach(b => {
+              b.classList.toggle("is-active", b.dataset.bndEmoji === val);
+            });
+          }
+        });
+        ["input", "change", "keyup", "compositionend"].forEach(evtName => {
+          bndCustomEmojiEl.addEventListener(evtName, () => {
+            const val = bndCustomEmojiEl.value.trim();
+            document.getElementById("bnd-modal-icon-badge").textContent = val || "🏷️";
+            document.querySelectorAll("#bnd-emoji-picker-row .emoji-choice-btn").forEach(b => {
+              b.classList.toggle("is-active", b.dataset.bndEmoji === val);
+            });
           });
         });
+        bndCustomEmojiEl.addEventListener("keydown", (e) => {
+          if (e.key === "Enter") {
+            e.preventDefault();
+            document.getElementById("bnd-btn-save-modal")?.click();
+          }
+        });
       }
+
+      document.getElementById("bnd-btn-save-modal")?.addEventListener("mousedown", () => {
+        if (bndCustomEmojiEl && document.activeElement === bndCustomEmojiEl) {
+          bndCustomEmojiEl.blur();
+        }
+      });
 
       document.getElementById("btn-trigger-bnd-os-emoji")?.addEventListener("click", () => {
         const input = document.getElementById("bnd-custom-emoji");
@@ -8185,21 +8288,23 @@
       }
 
       function wrapTextLines(ctx, text, maxWidth) {
-        const words = (text || "").split(' ');
+        const rawLines = String(text || "").split(/\r?\n/);
         const lines = [];
-        let currentLine = words[0] || "";
-
-        for (let i = 1; i < words.length; i++) {
-          const word = words[i];
-          const width = ctx.measureText(currentLine + " " + word).width;
-          if (width < maxWidth) {
-            currentLine += " " + word;
-          } else {
-            lines.push(currentLine);
-            currentLine = word;
+        rawLines.forEach(paragraph => {
+          const words = paragraph.split(" ");
+          let currentLine = words[0] || "";
+          for (let i = 1; i < words.length; i++) {
+            const word = words[i];
+            const width = ctx.measureText(currentLine + " " + word).width;
+            if (width < maxWidth) {
+              currentLine += " " + word;
+            } else {
+              lines.push(currentLine);
+              currentLine = word;
+            }
           }
-        }
-        lines.push(currentLine);
+          lines.push(currentLine);
+        });
         return lines;
       }
 
@@ -8983,6 +9088,11 @@
 
       // Paste image from clipboard onto selected topic
       window.addEventListener("paste", (e) => {
+        const activeTag = e.target && e.target.tagName;
+        const isTextField = activeTag === "INPUT" || activeTag === "TEXTAREA" || (e.target && e.target.isContentEditable);
+        if (isTextField && e.clipboardData && e.clipboardData.getData("text")) {
+          return;
+        }
         const items = e.clipboardData && e.clipboardData.items;
         if (!items) return;
         for (let i = 0; i < items.length; i++) {
