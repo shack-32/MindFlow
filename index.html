@@ -1020,14 +1020,14 @@
       stroke-width: 2.5px !important;
     }
 
-    /* Cinematic Mode Visual Enhancements (Theme-Aware Stage Spotlight) */
+    /* Cinematic Mode Visual Enhancements (Clean Stage Spotlight) */
     body.is-presenting.is-cinematic {
       background-color: var(--bg-canvas) !important;
     }
 
     body.is-presenting.is-cinematic #canvas-viewport {
       background-color: var(--bg-canvas) !important;
-      background-image: radial-gradient(circle at 50% 50%, var(--accent-glow) 0%, transparent 72%) !important;
+      background-image: none !important;
     }
 
     body.is-presenting.is-cinematic .mind-node:not(.is-spotlight):not(.is-lineage):not(.is-boundary-peer) {
@@ -7160,20 +7160,23 @@
             });
             const bndW = (maxX - minX) + 140;
             const bndH = (maxY - minY) + 140;
+            const prompterHeightOffset = state.showPrompter ? 54 : 0;
+            const availH = Math.max(300, window.innerHeight - (state.showPrompter ? 110 : 0));
             const fitZoomX = (window.innerWidth * 0.78) / Math.max(1, bndW);
-            const fitZoomY = (window.innerHeight * 0.72) / Math.max(1, bndH);
+            const fitZoomY = (availH * 0.72) / Math.max(1, bndH);
             const targetZoom = Math.min(1.22, Math.max(0.72, Math.min(fitZoomX, fitZoomY)));
             const bndCenterX = (minX + maxX) / 2;
             const bndCenterY = (minY + maxY) / 2;
             const focusX = bndCenterX * 0.65 + node.x * 0.35;
             const focusY = bndCenterY * 0.65 + node.y * 0.35;
             const targetX = window.innerWidth / 2 - focusX * targetZoom;
-            const targetY = window.innerHeight / 2 - focusY * targetZoom;
+            const targetY = (window.innerHeight - prompterHeightOffset) / 2 - focusY * targetZoom;
             smoothCameraTo(targetX, targetY, targetZoom, 500);
           } else {
+            const prompterHeightOffset = state.showPrompter ? 54 : 0;
             const targetZoom = 1.25;
             const targetX = window.innerWidth / 2 - node.x * targetZoom;
-            const targetY = window.innerHeight / 2 - node.y * targetZoom;
+            const targetY = (window.innerHeight - prompterHeightOffset) / 2 - node.y * targetZoom;
             smoothCameraTo(targetX, targetY, targetZoom, 500);
           }
         }
