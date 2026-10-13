@@ -484,9 +484,25 @@
       border: none !important;
       border-left: 3.5px solid var(--node-color, var(--accent)) !important;
       border-radius: 2px;
-      padding: 2px 10px;
+      padding: 2px 10px 2px 8px;
       gap: 2px;
       min-width: 50px;
+    }
+
+    /* On left-hand side of map, bracket bar is on the right facing root and incoming branch */
+    .mind-node.shape-bracket.side-left {
+      border-left: none !important;
+      border-right: 3.5px solid var(--node-color, var(--accent)) !important;
+      padding: 2px 8px 2px 10px;
+      text-align: right;
+    }
+
+    .mind-node.side-left:not(.shape-plain):not(.shape-bracket):not(.shape-underline) .node-header {
+      flex-direction: row-reverse;
+    }
+
+    .mind-node.side-left:not(.shape-plain):not(.shape-bracket):not(.shape-underline) .node-desc {
+      text-align: right;
     }
 
     .mind-node.shape-bracket .node-title {
@@ -976,10 +992,81 @@
       z-index: 45;
     }
 
+    /* Plain Text: NEVER show card box, border, or shadow in Present mode */
+    body.is-presenting .mind-node.shape-plain,
     body.is-presenting .mind-node.shape-plain.is-boundary-peer,
-    body.is-presenting .mind-node.shape-bracket.is-boundary-peer,
-    body.is-presenting .mind-node.shape-underline.is-boundary-peer {
+    body.is-presenting .mind-node.shape-plain.is-lineage,
+    body.is-presenting .mind-node.shape-plain.is-spotlight,
+    body.is-presenting .mind-node.shape-plain.is-boundary-focus {
+      background: transparent !important;
+      border: 1px solid transparent !important;
+      border-color: transparent !important;
       box-shadow: none !important;
+      outline: none !important;
+    }
+
+    body.is-presenting .mind-node.shape-plain.is-spotlight .node-title,
+    body.is-presenting .mind-node.shape-plain.is-boundary-focus .node-title {
+      color: #ffffff !important;
+      text-shadow: 0 0 10px var(--node-color, var(--accent)), 0 0 20px var(--node-color, var(--accent)) !important;
+      font-weight: 800 !important;
+    }
+
+    /* Minimal Side Bracket: NEVER show card box, card borders, or turn gray in Present mode */
+    body.is-presenting .mind-node.shape-bracket,
+    body.is-presenting .mind-node.shape-bracket.is-boundary-peer,
+    body.is-presenting .mind-node.shape-bracket.is-lineage {
+      background: transparent !important;
+      box-shadow: none !important;
+      outline: none !important;
+      border: none !important;
+      border-left: 3.5px solid var(--node-color, var(--accent)) !important;
+      border-right: none !important;
+      border-top: none !important;
+      border-bottom: none !important;
+    }
+
+    body.is-presenting .mind-node.shape-bracket.side-left,
+    body.is-presenting .mind-node.shape-bracket.side-left.is-boundary-peer,
+    body.is-presenting .mind-node.shape-bracket.side-left.is-lineage {
+      border-right: 3.5px solid var(--node-color, var(--accent)) !important;
+      border-left: none !important;
+      border-top: none !important;
+      border-bottom: none !important;
+    }
+
+    body.is-presenting .mind-node.shape-bracket.is-spotlight,
+    body.is-presenting .mind-node.shape-bracket.is-boundary-focus {
+      background: rgba(99, 102, 241, 0.08) !important;
+      box-shadow: none !important;
+      outline: none !important;
+      border: none !important;
+      border-left: 4.5px solid var(--node-color, var(--accent)) !important;
+      border-right: none !important;
+      border-top: none !important;
+      border-bottom: none !important;
+      filter: drop-shadow(0 0 6px var(--node-color, var(--accent))) !important;
+    }
+
+    body.is-presenting .mind-node.shape-bracket.side-left.is-spotlight,
+    body.is-presenting .mind-node.shape-bracket.side-left.is-boundary-focus {
+      border-right: 4.5px solid var(--node-color, var(--accent)) !important;
+      border-left: none !important;
+      border-top: none !important;
+      border-bottom: none !important;
+    }
+
+    /* Underline Shape: NEVER show card box or turn gray in Present mode */
+    body.is-presenting .mind-node.shape-underline,
+    body.is-presenting .mind-node.shape-underline.is-spotlight,
+    body.is-presenting .mind-node.shape-underline.is-boundary-focus,
+    body.is-presenting .mind-node.shape-underline.is-boundary-peer,
+    body.is-presenting .mind-node.shape-underline.is-lineage {
+      background: transparent !important;
+      box-shadow: none !important;
+      outline: none !important;
+      border: none !important;
+      border-bottom: 2.5px solid var(--node-color, var(--accent)) !important;
     }
 
     /* Lineage Ancestor illumination connecting back to home/root */
@@ -4644,8 +4731,21 @@
           const isSelected = state.selectedNodeIds.has(node.id) || state.selectedNodeId === node.id;
           const dims = nodeDimensions.get(node.id) || { w: 180, h: 50 };
 
+          function checkNodeIsLeft(n) {
+            if (!n || n.id === "root") return false;
+            if (n.side === "left") return true;
+            if (n.side === "right") return false;
+            if (sheet.layout === "radial" && n.x < 0) return true;
+            if (n.parentId) {
+              const p = sheet.nodes.find(x => x.id === n.parentId);
+              return checkNodeIsLeft(p);
+            }
+            return false;
+          }
+
+          const isLeftSide = checkNodeIsLeft(node);
           const nodeEl = document.createElement("div");
-          nodeEl.className = `mind-node ${isRoot ? "is-root" : ""} ${isSelected ? "is-selected" : ""} shape-${node.shape || "card"}`;
+          nodeEl.className = `mind-node ${isRoot ? "is-root" : ""} ${isSelected ? "is-selected" : ""} shape-${node.shape || "card"} ${isLeftSide ? "side-left" : "side-right"}`;
           nodeEl.id = `node-${node.id}`;
           nodeEl.style.setProperty("--node-color", node.color || "#6366f1");
 
@@ -8695,6 +8795,19 @@
           const shape = node.shape || "card";
           const nodeColor = node.color || "#6366f1";
 
+          function checkExportNodeIsLeft(n) {
+            if (!n || n.id === "root") return false;
+            if (n.side === "left") return true;
+            if (n.side === "right") return false;
+            if (sheet.layout === "radial" && n.x < 0) return true;
+            if (n.parentId) {
+              const p = sheet.nodes.find(x => x.id === n.parentId);
+              return checkExportNodeIsLeft(p);
+            }
+            return false;
+          }
+          const isNodeLeft = checkExportNodeIsLeft(node);
+
           if (shape === "plain") {
             // Plain text only: no box, no border, no accent bar
           } else if (shape === "underline") {
@@ -8711,8 +8824,9 @@
             ctx.strokeStyle = nodeColor;
             ctx.lineWidth = 3.5;
             ctx.beginPath();
-            ctx.moveTo(nx, ny + 2);
-            ctx.lineTo(nx, ny + nh - 2);
+            const bx = isNodeLeft ? (nx + nw) : nx;
+            ctx.moveTo(bx, ny + 2);
+            ctx.lineTo(bx, ny + nh - 2);
             ctx.stroke();
             ctx.restore();
           } else if (shape === "outline") {
@@ -8860,13 +8974,27 @@
           const shape = n.shape || "card";
           const col = n.color || "#6366f1";
 
+          function checkSvgNodeIsLeft(targetNode) {
+            if (!targetNode || targetNode.id === "root") return false;
+            if (targetNode.side === "left") return true;
+            if (targetNode.side === "right") return false;
+            if (sheet.layout === "radial" && targetNode.x < 0) return true;
+            if (targetNode.parentId) {
+              const p = sheet.nodes.find(x => x.id === targetNode.parentId);
+              return checkSvgNodeIsLeft(p);
+            }
+            return false;
+          }
+          const isSvgLeft = checkSvgNodeIsLeft(n);
+
           svgContent += `<g transform="translate(${x}, ${y})">\n`;
           if (shape === "plain") {
             // No background box for plain text
           } else if (shape === "underline") {
             svgContent += `  <line x1="0" y1="${h}" x2="${w}" y2="${h}" stroke="${col}" stroke-width="2.5" />\n`;
           } else if (shape === "bracket") {
-            svgContent += `  <line x1="0" y1="2" x2="0" y2="${h - 2}" stroke="${col}" stroke-width="3.5" />\n`;
+            const bx = isSvgLeft ? w : 0;
+            svgContent += `  <line x1="${bx}" y1="2" x2="${bx}" y2="${h - 2}" stroke="${col}" stroke-width="3.5" />\n`;
           } else if (shape === "outline") {
             svgContent += `  <rect width="${w}" height="${h}" rx="12" fill="none" stroke="${col}" stroke-width="2" />\n`;
           } else {
