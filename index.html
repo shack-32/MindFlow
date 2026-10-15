@@ -2759,6 +2759,31 @@
         </div>
       </div>
 
+      <!-- View Menu (Visibility Toggles) -->
+      <div class="dropdown-container">
+        <button class="ui-btn" id="btn-view-dropdown" title="View Options & Layer Visibility">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          <span class="menu-text-label">View</span>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:12px;height:12px;"><path d="M6 9l6 6 6-6"/></svg>
+        </button>
+        <div class="dropdown-menu" id="view-menu">
+          <div class="dropdown-item" id="menu-view-toggle-boundaries">
+            <span style="display:flex; align-items:center; gap:8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px;"><rect x="3" y="3" width="18" height="18" rx="4" stroke-dasharray="3 3"/></svg>
+              <span>Hide Group Boundaries</span>
+            </span>
+            <span id="menu-hide-boundaries-check" class="menu-checkmark"></span>
+          </div>
+          <div class="dropdown-item" id="menu-view-toggle-rel-titles">
+            <span style="display:flex; align-items:center; gap:8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px;"><path d="M4 12h16M13 5l7 7-7 7"/></svg>
+              <span>Hide Relationship Titles</span>
+            </span>
+            <span id="menu-hide-rel-titles-check" class="menu-checkmark"></span>
+          </div>
+        </div>
+      </div>
+
       <!-- Present Menu -->
       <div class="dropdown-container">
         <button class="ui-btn" id="btn-present-dropdown">
@@ -2866,6 +2891,14 @@
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px; height:14px;"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>Boundary Settings...</span>
       </div>
+      <div class="ctx-item" id="ctx-boundary-toggle-hide" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px; height:14px;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        <span id="ctx-boundary-toggle-hide-text">Hide Group Boundary</span>
+      </div>
+      <div class="ctx-item" id="ctx-rel-toggle-hide" style="display:none;">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px; height:14px;"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        <span id="ctx-rel-toggle-hide-text">Hide Relationship Title</span>
+      </div>
       <div class="ctx-divider"></div>
       <div class="ctx-item" id="ctx-edit-details">
         <span>Edit Details & Notes</span>
@@ -2944,6 +2977,9 @@
         <button class="ui-btn" id="inspector-btn-rel-label" style="padding:4px 8px; font-size:0.72rem;" title="Edit Relationship Label">
           <span>Edit Label</span>
         </button>
+        <button class="ui-btn" id="inspector-btn-rel-toggle-hide" style="padding:4px 8px; font-size:0.72rem;" title="Toggle Hide/Show Relationship Title">
+          <span id="inspector-btn-rel-toggle-hide-text">Hide Title</span>
+        </button>
       </div>
 
       <div class="toolbar-divider"></div>
@@ -2951,6 +2987,11 @@
       <button class="ui-btn" id="inspector-btn-bnd-settings" style="display:none;" title="Boundary Advanced Settings">
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"/></svg>
         <span>Settings</span>
+      </button>
+
+      <button class="ui-btn" id="inspector-btn-bnd-toggle-hide" style="display:none;" title="Toggle Hide/Show Group Boundary Box">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+        <span id="inspector-btn-bnd-toggle-hide-text">Hide</span>
       </button>
 
       <button class="ui-btn" id="inspector-btn-boundary" title="Wrap in Boundary Box (B)">
@@ -3318,6 +3359,18 @@
             </label>
           </div>
 
+          <!-- Boundary Visibility Toggle -->
+          <div class="form-group">
+            <label class="form-label">Boundary Visibility</label>
+            <label style="display:flex; align-items:flex-start; gap:10px; background:var(--bg-surface); border:1px solid var(--border-strong); padding:9px 12px; border-radius:10px; cursor:pointer;">
+              <input type="checkbox" id="bnd-hidden-toggle" style="margin-top:3px; accent-color:var(--accent); width:15px; height:15px; cursor:pointer; flex-shrink:0;" />
+              <div style="display:flex; flex-direction:column; gap:2px;">
+                <span style="font-size:0.82rem; font-weight:600; color:var(--text-main);">Hide this group boundary box and tag</span>
+                <span style="font-size:0.72rem; color:var(--text-muted); line-height:1.35;">Hides the enclosure background and badge while keeping all contained topics visible.</span>
+              </div>
+            </label>
+          </div>
+
           <!-- Topics Checklist -->
           <div class="form-group">
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:4px;">
@@ -3543,6 +3596,14 @@
           <span>Undo / Redo</span>
           <span class="kbd-badge">Ctrl + Z / Ctrl + Y</span>
         </div>
+        <div class="shortcut-row">
+          <span>Toggle Hide Group Boundaries</span>
+          <span class="kbd-badge">Shift + B</span>
+        </div>
+        <div class="shortcut-row">
+          <span>Toggle Hide Relationship Titles</span>
+          <span class="kbd-badge">Shift + R</span>
+        </div>
       </div>
     </div>
 
@@ -3727,6 +3788,8 @@
         gridStyle: "dots",
         activeTool: "select", // "select", "pan", "connect", "boundary"
         activeSheetId: "sheet-1",
+        hideGroupBoundaries: false,
+        hideRelationshipTitles: false,
         sheets: [
           {
             id: "sheet-1",
@@ -3771,6 +3834,8 @@
           customTheme: state.customTheme,
           gridStyle: state.gridStyle,
           activeSheetId: state.activeSheetId,
+          hideGroupBoundaries: !!state.hideGroupBoundaries,
+          hideRelationshipTitles: !!state.hideRelationshipTitles,
           sheets: state.sheets
         });
         historyStack.push(snapshot);
@@ -3804,10 +3869,13 @@
           state.gridStyle = data.gridStyle || "dots";
           state.sheets = data.sheets;
           state.activeSheetId = data.activeSheetId || data.sheets[0].id;
+          state.hideGroupBoundaries = !!data.hideGroupBoundaries;
+          state.hideRelationshipTitles = !!data.hideRelationshipTitles;
           document.getElementById('project-title-input').value = state.title;
           applyTheme(state.theme, false, true);
           updateSheetTabs();
           updateLayoutLabel();
+          updateViewMenuChecks();
           render();
         } catch (e) {
           console.error("Error restoring history", e);
@@ -3840,10 +3908,13 @@
               state.gridStyle = data.gridStyle || "dots";
               state.sheets = data.sheets;
               state.activeSheetId = data.activeSheetId || data.sheets[0].id;
+              state.hideGroupBoundaries = !!data.hideGroupBoundaries;
+              state.hideRelationshipTitles = !!data.hideRelationshipTitles;
               document.getElementById('project-title-input').value = state.title;
               applyTheme(state.theme, false, true);
               updateSheetTabs();
               updateLayoutLabel();
+              updateViewMenuChecks();
             }
           }
         } catch (e) {}
@@ -4918,6 +4989,8 @@
         // 2. Render Boundaries (Under-layer group enclosures)
         boundariesGroup.innerHTML = "";
         (sheet.boundaries || []).forEach(bnd => {
+          const isBndHidden = bnd.hidden === true || (state.hideGroupBoundaries && state.selectedBoundaryId !== bnd.id);
+          if (isBndHidden) return;
           const memberNodes = sheet.nodes.filter(n => bnd.nodeIds.includes(n.id) && isVisible.has(n.id));
           if (memberNodes.length === 0) return;
 
@@ -5246,6 +5319,11 @@
           }
 
           // Arrow Label Pill Container placed directly at curve apex
+          const isRelTitleHidden = rel.hiddenLabel === true || (state.hideRelationshipTitles && state.selectedRelId !== rel.id);
+          if (isRelTitleHidden) {
+            // Relationship title pill hidden per user preference
+            return;
+          }
           const labelGroup = document.createElementNS("http://www.w3.org/2000/svg", "g");
           labelGroup.setAttribute("id", `rel-label-${rel.id}`);
           labelGroup.setAttribute("class", `rel-label-container ${isSpotlightRel ? "is-spotlight" : ""}`);
@@ -6513,6 +6591,26 @@
           bndSettingsItem.style.display = isBoundary ? "flex" : "none";
         }
 
+        const curBndObj = (isBoundary && (boundaryId || state.selectedBoundaryId)) ? (sheet.boundaries || []).find(b => b.id === (boundaryId || state.selectedBoundaryId)) : null;
+        const ctxBndHideItem = document.getElementById("ctx-boundary-toggle-hide");
+        if (ctxBndHideItem) {
+          ctxBndHideItem.style.display = isBoundary ? "flex" : "none";
+          const bndHideText = document.getElementById("ctx-boundary-toggle-hide-text");
+          if (bndHideText && curBndObj) {
+            bndHideText.textContent = (curBndObj.hidden || state.hideGroupBoundaries) ? "Show Group Boundary" : "Hide Group Boundary";
+          }
+        }
+
+        const curRelObj = state.selectedRelId ? (sheet.relationships || []).find(r => r.id === state.selectedRelId) : null;
+        const ctxRelHideItem = document.getElementById("ctx-rel-toggle-hide");
+        if (ctxRelHideItem) {
+          ctxRelHideItem.style.display = curRelObj ? "flex" : "none";
+          const relHideText = document.getElementById("ctx-rel-toggle-hide-text");
+          if (relHideText && curRelObj) {
+            relHideText.textContent = (curRelObj.hiddenLabel || state.hideRelationshipTitles) ? "Show Relationship Title" : "Hide Relationship Title";
+          }
+        }
+
         const bndCreateItem = document.getElementById("ctx-add-boundary");
         if (bndCreateItem) {
           bndCreateItem.style.display = (!isBoundary && (hasNode || state.selectedNodeIds.size > 0)) ? "flex" : "none";
@@ -6813,6 +6911,12 @@
         const presentTogetherCb = document.getElementById("bnd-present-together");
         if (presentTogetherCb) {
           presentTogetherCb.checked = bnd.presentTogether !== false;
+        }
+
+        // Boundary hidden toggle
+        const bndHiddenCb = document.getElementById("bnd-hidden-toggle");
+        if (bndHiddenCb) {
+          bndHiddenCb.checked = bnd.hidden === true;
         }
 
         // Topics checklist
@@ -7328,6 +7432,55 @@
           `;
           prompterNotes.textContent = node.desc ? node.desc : "No lecture talking points entered for this topic. Double-click topic to add notes.";
         }
+      }
+
+      function updateViewMenuChecks() {
+        const bndCheck = document.getElementById("menu-hide-boundaries-check");
+        if (bndCheck) bndCheck.textContent = state.hideGroupBoundaries ? "✓" : "";
+        const relCheck = document.getElementById("menu-hide-rel-titles-check");
+        if (relCheck) relCheck.textContent = state.hideRelationshipTitles ? "✓" : "";
+      }
+
+      function toggleHideGroupBoundaries() {
+        state.hideGroupBoundaries = !state.hideGroupBoundaries;
+        updateViewMenuChecks();
+        pushHistory();
+        render();
+        updateInspectorBar();
+        showToast(state.hideGroupBoundaries ? "Group Boundaries Hidden" : "Group Boundaries Visible");
+      }
+
+      function toggleHideRelationshipTitles() {
+        state.hideRelationshipTitles = !state.hideRelationshipTitles;
+        updateViewMenuChecks();
+        pushHistory();
+        render();
+        updateInspectorBar();
+        showToast(state.hideRelationshipTitles ? "Relationship Titles Hidden" : "Relationship Titles Visible");
+      }
+
+      function toggleHideSelectedBoundary() {
+        if (!state.selectedBoundaryId) return;
+        const sheet = getActiveSheet();
+        const bnd = (sheet.boundaries || []).find(b => b.id === state.selectedBoundaryId);
+        if (!bnd) return;
+        bnd.hidden = !bnd.hidden;
+        pushHistory();
+        render();
+        updateInspectorBar();
+        showToast(bnd.hidden ? `"${bnd.title || 'Boundary'}" Box Hidden` : `"${bnd.title || 'Boundary'}" Box Visible`);
+      }
+
+      function toggleHideSelectedRelationshipTitle() {
+        if (!state.selectedRelId) return;
+        const sheet = getActiveSheet();
+        const rel = (sheet.relationships || []).find(r => r.id === state.selectedRelId);
+        if (!rel) return;
+        rel.hiddenLabel = !rel.hiddenLabel;
+        pushHistory();
+        render();
+        updateInspectorBar();
+        showToast(rel.hiddenLabel ? "Relationship Title Hidden" : "Relationship Title Visible");
       }
 
       function toggleCleanMode() {
@@ -8141,6 +8294,14 @@
             btn.classList.toggle("is-active", (end === "from" && p === curFrom) || (end === "to" && p === curTo));
           });
 
+          const relToggleHideBtn = document.getElementById("inspector-btn-rel-toggle-hide");
+          const relToggleHideText = document.getElementById("inspector-btn-rel-toggle-hide-text");
+          if (relToggleHideBtn && relToggleHideText) {
+            const isRelHidden = rel.hiddenLabel === true || state.hideRelationshipTitles;
+            relToggleHideText.textContent = isRelHidden ? "Show Title" : "Hide Title";
+            relToggleHideBtn.classList.toggle("is-active", isRelHidden);
+          }
+
           const bndSettingsBtn = document.getElementById("inspector-btn-bnd-settings");
           if (bndSettingsBtn) bndSettingsBtn.style.display = "none";
           document.getElementById("inspector-btn-boundary").style.display = "none";
@@ -8189,12 +8350,22 @@
 
           const bndSettingsBtn = document.getElementById("inspector-btn-bnd-settings");
           if (bndSettingsBtn) bndSettingsBtn.style.display = "flex";
+          const bndToggleHideBtn = document.getElementById("inspector-btn-bnd-toggle-hide");
+          const bndToggleHideText = document.getElementById("inspector-btn-bnd-toggle-hide-text");
+          if (bndToggleHideBtn && bndToggleHideText) {
+            bndToggleHideBtn.style.display = "flex";
+            const isBndHidden = bnd.hidden === true || state.hideGroupBoundaries;
+            bndToggleHideText.textContent = isBndHidden ? "Show Box" : "Hide Box";
+            bndToggleHideBtn.classList.toggle("is-active", isBndHidden);
+          }
           return;
         }
 
         inspectorEl.classList.remove("is-boundary-mode");
         const bndSettingsBtn = document.getElementById("inspector-btn-bnd-settings");
         if (bndSettingsBtn) bndSettingsBtn.style.display = "none";
+        const bndToggleHideBtn = document.getElementById("inspector-btn-bnd-toggle-hide");
+        if (bndToggleHideBtn) bndToggleHideBtn.style.display = "none";
 
         if (shapeGroupEl) shapeGroupEl.style.display = "flex";
         if (shapeDividerEl) shapeDividerEl.style.display = "block";
@@ -8546,6 +8717,8 @@
         bnd.nodeIds = checkedNodeIds;
         const presentTogetherCb = document.getElementById("bnd-present-together");
         bnd.presentTogether = presentTogetherCb ? presentTogetherCb.checked : true;
+        const bndHiddenCb = document.getElementById("bnd-hidden-toggle");
+        bnd.hidden = bndHiddenCb ? bndHiddenCb.checked : false;
 
         closeBoundaryModal();
         pushHistory();
@@ -8626,6 +8799,8 @@
           customTheme: state.customTheme,
           gridStyle: state.gridStyle,
           activeSheetId: state.activeSheetId,
+          hideGroupBoundaries: !!state.hideGroupBoundaries,
+          hideRelationshipTitles: !!state.hideRelationshipTitles,
           sheets: state.sheets,
           exportedAt: new Date().toISOString()
         };
@@ -8652,6 +8827,9 @@
               state.customTheme = data.customTheme || null;
               state.gridStyle = data.gridStyle || "dots";
 
+              state.hideGroupBoundaries = !!data.hideGroupBoundaries;
+              state.hideRelationshipTitles = !!data.hideRelationshipTitles;
+              updateViewMenuChecks();
               if (Array.isArray(data.sheets)) {
                 state.sheets = data.sheets;
                 state.activeSheetId = data.activeSheetId || data.sheets[0].id;
@@ -8739,6 +8917,7 @@
 
         // Draw Boundaries in PNG
         (sheet.boundaries || []).forEach(bnd => {
+          if (bnd.hidden === true || state.hideGroupBoundaries) return;
           const members = sheet.nodes.filter(n => bnd.nodeIds.includes(n.id));
           if (members.length === 0) return;
           let bMinX = Infinity, bMaxX = -Infinity, bMinY = Infinity, bMaxY = -Infinity;
@@ -9537,7 +9716,36 @@
       setupDropdown("btn-layout-dropdown", "layout-menu");
       setupDropdown("btn-theme-dropdown", "theme-menu");
       setupDropdown("btn-templates-dropdown", "templates-menu");
+      setupDropdown("btn-view-dropdown", "view-menu");
       setupDropdown("btn-present-dropdown", "present-menu");
+
+      // View Menu Listeners
+      document.getElementById("menu-view-toggle-boundaries")?.addEventListener("click", () => {
+        closeAllDropdowns();
+        toggleHideGroupBoundaries();
+      });
+      document.getElementById("menu-view-toggle-rel-titles")?.addEventListener("click", () => {
+        closeAllDropdowns();
+        toggleHideRelationshipTitles();
+      });
+
+      // Inspector bar toggle buttons
+      document.getElementById("inspector-btn-bnd-toggle-hide")?.addEventListener("click", () => {
+        toggleHideSelectedBoundary();
+      });
+      document.getElementById("inspector-btn-rel-toggle-hide")?.addEventListener("click", () => {
+        toggleHideSelectedRelationshipTitle();
+      });
+
+      // Context menu toggle buttons
+      document.getElementById("ctx-boundary-toggle-hide")?.addEventListener("click", () => {
+        closeContextMenu();
+        toggleHideSelectedBoundary();
+      });
+      document.getElementById("ctx-rel-toggle-hide")?.addEventListener("click", () => {
+        closeContextMenu();
+        toggleHideSelectedRelationshipTitle();
+      });
       setupDropdown("btn-export-dropdown", "export-menu");
 
       // File Menu undo / redo
