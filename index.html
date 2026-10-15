@@ -499,6 +499,11 @@
 
     .mind-node.side-left:not(.shape-plain):not(.shape-bracket):not(.shape-underline) .node-header {
       flex-direction: row-reverse;
+      justify-content: flex-start;
+    }
+    .mind-node.side-left:not(.shape-plain):not(.shape-bracket):not(.shape-underline) .node-title {
+      text-align: right;
+      flex-grow: 0;
     }
 
     .mind-node.side-left:not(.shape-plain):not(.shape-bracket):not(.shape-underline) .node-desc {
@@ -929,6 +934,33 @@
 
     .drag-drop-indicator::before { left: -4px; }
     .drag-drop-indicator::after { right: -4px; }
+
+    /* Branch Order Number Badge */
+    .node-branch-number {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-width: 18px;
+      height: 18px;
+      padding: 0 4px;
+      border-radius: 999px;
+      font-size: 0.68rem;
+      font-weight: 700;
+      background: var(--bg-surface-elevated, #161b2a);
+      color: var(--text-muted, #94a3b8);
+      border: 1px solid var(--border-subtle, rgba(148, 163, 184, 0.25));
+      flex-shrink: 0;
+      line-height: 1;
+    }
+    .mind-node.is-spotlight .node-branch-number,
+    .mind-node.is-selected .node-branch-number {
+      background: var(--node-color, var(--accent));
+      color: #ffffff;
+      border-color: transparent;
+    }
+    body.is-presenting .node-branch-number {
+      display: none !important;
+    }
 
     /* Presentation Spotlight & Cinematic Modes */
     body.is-presenting {
@@ -2681,6 +2713,10 @@
             <span>Flip Branch Side</span>
             <span class="dropdown-item-desc">Left ⟷ Right</span>
           </div>
+          <div class="dropdown-item" id="menu-layout-toggle-branch-numbers">
+            <span>Show Branch Numbers</span>
+            <span id="menu-layout-branch-numbers-check" class="menu-checkmark"></span>
+          </div>
         </div>
       </div>
 
@@ -2780,6 +2816,13 @@
               <span>Hide Relationship Titles</span>
             </span>
             <span id="menu-hide-rel-titles-check" class="menu-checkmark"></span>
+          </div>
+          <div class="dropdown-item" id="menu-view-toggle-branch-numbers">
+            <span style="display:flex; align-items:center; gap:8px;">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px;"><circle cx="12" cy="12" r="9"/><text x="12" y="16" text-anchor="middle" font-size="11" font-weight="700" fill="currentColor">1</text></svg>
+              <span>Show Branch Numbers</span>
+            </span>
+            <span id="menu-branch-numbers-check" class="menu-checkmark"></span>
           </div>
         </div>
       </div>
@@ -3790,6 +3833,7 @@
         activeSheetId: "sheet-1",
         hideGroupBoundaries: false,
         hideRelationshipTitles: false,
+        showBranchNumbers: false,
         sheets: [
           {
             id: "sheet-1",
@@ -3834,8 +3878,14 @@
           customTheme: state.customTheme,
           gridStyle: state.gridStyle,
           activeSheetId: state.activeSheetId,
+            hideGroupBoundaries: !!state.hideGroupBoundaries,
+            hideRelationshipTitles: !!state.hideRelationshipTitles,
+          showBranchNumbers: !!state.showBranchNumbers,
+            showBranchNumbers: !!state.showBranchNumbers,
           hideGroupBoundaries: !!state.hideGroupBoundaries,
           hideRelationshipTitles: !!state.hideRelationshipTitles,
+          showBranchNumbers: !!state.showBranchNumbers,
+          showBranchNumbers: !!state.showBranchNumbers,
           sheets: state.sheets
         });
         historyStack.push(snapshot);
@@ -3871,6 +3921,8 @@
           state.activeSheetId = data.activeSheetId || data.sheets[0].id;
           state.hideGroupBoundaries = !!data.hideGroupBoundaries;
           state.hideRelationshipTitles = !!data.hideRelationshipTitles;
+              state.showBranchNumbers = !!data.showBranchNumbers;
+          state.showBranchNumbers = !!data.showBranchNumbers;
           document.getElementById('project-title-input').value = state.title;
           applyTheme(state.theme, false, true);
           updateSheetTabs();
@@ -3910,6 +3962,7 @@
               state.activeSheetId = data.activeSheetId || data.sheets[0].id;
               state.hideGroupBoundaries = !!data.hideGroupBoundaries;
               state.hideRelationshipTitles = !!data.hideRelationshipTitles;
+              state.showBranchNumbers = !!data.showBranchNumbers;
               document.getElementById('project-title-input').value = state.title;
               applyTheme(state.theme, false, true);
               updateSheetTabs();
@@ -4795,12 +4848,28 @@
         nodesLayer.innerHTML = "";
         const domNodesMap = new Map();
 
+        // Compute branch presentation numbers (1-based index within parent's ordered children)
+        const branchNumberMap = new Map();
+        if (state.showBranchNumbers) {
+          const parentsSet = new Set(sheet.nodes.map(n => n.parentId).filter(Boolean));
+          parentsSet.forEach(pid => {
+            const ordered = getOrderedChildren(sheet, pid);
+            ordered.forEach((child, idx) => {
+              branchNumberMap.set(child.id, idx + 1);
+            });
+          });
+        }
+
         sheet.nodes.forEach(node => {
           if (!isVisible.has(node.id)) return;
 
           const isRoot = node.id === "root";
           const isSelected = state.selectedNodeIds.has(node.id) || state.selectedNodeId === node.id;
           const dims = nodeDimensions.get(node.id) || { w: 180, h: 50 };
+          const branchNum = branchNumberMap.get(node.id);
+          const nodeNumberBadgeHtml = (!isRoot && branchNum !== undefined)
+            ? `<span class="node-branch-number" title="Presentation Step #${branchNum} in branch">${branchNum}</span>`
+            : "";
 
           function checkNodeIsLeft(n) {
             if (!n || n.id === "root") return false;
@@ -4864,6 +4933,7 @@
             ${imageHtml}
             <div class="node-header">
               <div class="node-accent-bar" style="background-color: ${node.color || '#6366f1'}"></div>
+              ${nodeNumberBadgeHtml}
               ${node.emoji ? `<span class="node-emoji-badge">${node.emoji}</span>` : ""}
               <div class="node-title" data-node-id="${node.id}">${renderTextWithSpellcheck(node.text || "Untitled")}</div>
             </div>
@@ -5009,19 +5079,20 @@
           });
 
           const bndSpacing = bnd.internalSpacing || "compact";
-          let padX = 20, padTop = 26, padBottom = 16;
+          // Generous margins so cards never touch or crowd boundary lines, even when scaled/focused in Present mode
+          let padX = 40, padTop = 44, padBottom = 32;
           if (bndSpacing === "compact") {
-            padX = allLightweight ? 16 : 20;
-            padTop = allLightweight ? 22 : 26;
-            padBottom = allLightweight ? 12 : 16;
+            padX = allLightweight ? 32 : 38;
+            padTop = allLightweight ? 38 : 42;
+            padBottom = allLightweight ? 26 : 30;
           } else if (bndSpacing === "comfortable") {
-            padX = 24;
-            padTop = 32;
-            padBottom = 22;
+            padX = 48;
+            padTop = 52;
+            padBottom = 38;
           } else if (bndSpacing === "large") {
-            padX = 34;
-            padTop = 42;
-            padBottom = 30;
+            padX = 64;
+            padTop = 68;
+            padBottom = 50;
           }
           const bx = minX - padX;
           const by = minY - padTop;
@@ -6107,6 +6178,15 @@
         const currentEl = nodeEl;
         let dropAction = null;
 
+        // Determine all nodes being dragged concurrently (if multiple selected)
+        const dragNodeIds = (state.selectedNodeIds && state.selectedNodeIds.has(node.id) && state.selectedNodeIds.size > 1)
+          ? Array.from(state.selectedNodeIds)
+          : [node.id];
+        const dragNodeIdSet = new Set(dragNodeIds);
+        const dragNodesList = dragNodeIds.map(id => sheet.nodes.find(n => n.id === id)).filter(Boolean);
+        const origPosMap = new Map(dragNodesList.map(n => [n.id, { x: n.x, y: n.y }]));
+        const dragElementsList = dragNodeIds.map(id => document.getElementById(`node-${id}`)).filter(Boolean);
+
         function findDropTargetNode(clientX, clientY, wx, wy) {
           // 1. Check all elements in the Z-stack under the cursor (immune to dragged card or SVG overlays)
           const stack = document.elementsFromPoint ? document.elementsFromPoint(clientX, clientY) : [document.elementFromPoint(clientX, clientY)];
@@ -6125,7 +6205,7 @@
               ) {
                 const candId = candEl.id.replace("node-", "");
                 const candNode = sheet.nodes.find(n => n.id === candId);
-                if (candNode && candNode.id !== node.id && !isAncestor(node.id, candNode.id)) {
+                if (candNode && !dragNodeIdSet.has(candNode.id) && !dragNodesList.some(dn => isAncestor(dn.id, candNode.id))) {
                   return { targetNode: candNode, targetEl: candEl };
                 }
               }
@@ -6137,7 +6217,7 @@
           let bestBoxDist = Infinity;
           for (let i = 0; i < sheet.nodes.length; i++) {
             const cand = sheet.nodes[i];
-            if (cand.id === node.id || isAncestor(node.id, cand.id)) continue;
+            if (dragNodeIdSet.has(cand.id) || dragNodesList.some(dn => isAncestor(dn.id, cand.id))) continue;
             const candEl = document.getElementById(`node-${cand.id}`);
             if (!candEl || candEl.style.display === "none") continue;
             const cw = candEl.offsetWidth || 180;
@@ -6208,24 +6288,38 @@
           if (!hasMoved) return;
 
           if (sheet.layout === "freeform") {
-            node.x = origNodeX + dx;
-            node.y = origNodeY + dy;
-            const curW = currentEl.offsetWidth || 180;
-            const curH = currentEl.offsetHeight || 54;
-            currentEl.style.left = `${Math.round(node.x - curW / 2)}px`;
-            currentEl.style.top = `${Math.round(node.y - curH / 2)}px`;
-            currentEl.style.transform = "";
+            dragNodesList.forEach(dn => {
+              const orig = origPosMap.get(dn.id) || { x: dn.x, y: dn.y };
+              dn.x = orig.x + dx;
+              dn.y = orig.y + dy;
+              const el = document.getElementById(`node-${dn.id}`);
+              if (el) {
+                const curW = el.offsetWidth || 180;
+                const curH = el.offsetHeight || 54;
+                el.style.left = `${Math.round(dn.x - curW / 2)}px`;
+                el.style.top = `${Math.round(dn.y - curH / 2)}px`;
+                el.style.transform = "";
+              }
+            });
             updateFreeformConnectorsLive();
             updateMinimap();
             return;
           }
 
-          // Fully graphical floating card following cursor
-          currentEl.style.transform = `translate(${dx}px, ${dy}px) scale(1.04)`;
+          // Fully graphical floating card(s) following cursor
+          dragElementsList.forEach(el => {
+            el.style.transform = `translate(${dx}px, ${dy}px) scale(1.04)`;
+            el.classList.add("is-dragging");
+            el.style.zIndex = "1000";
+            el.style.pointerEvents = "none";
+          });
 
-          const tempX = origNodeX + dx;
-          const tempY = origNodeY + dy;
-          updateRelationshipsLive(new Map([[node.id, { ...node, x: tempX, y: tempY }]]));
+          const overrideMap = new Map();
+          dragNodesList.forEach(dn => {
+            const orig = origPosMap.get(dn.id) || { x: dn.x, y: dn.y };
+            overrideMap.set(dn.id, { ...dn, x: orig.x + dx, y: orig.y + dy });
+          });
+          updateRelationshipsLive(overrideMap);
 
           const wx = (e.clientX - state.camera.x) / state.camera.zoom;
           const wy = (e.clientY - state.camera.y) / state.camera.zoom;
@@ -6240,9 +6334,18 @@
             const isSibling = (targetNode.parentId === node.parentId) && (node.parentId !== null);
             const rect = targetEl.getBoundingClientRect();
 
-            if (isSibling) {
-              // Reordering among siblings!
-              const isHorizontal = sheet.layout === "tree-down";
+            const isHorizontal = sheet.layout === "tree-down";
+            // Calculate edge vs center position on target card to differentiate nesting as subcard vs reordering
+            const edgeRatio = isHorizontal
+              ? Math.abs(e.clientX - (rect.left + rect.width / 2)) / (rect.width / 2)
+              : Math.abs(e.clientY - (rect.top + rect.height / 2)) / (rect.height / 2);
+
+            // If cursor is directly over the central body of the card, user wants to nest as subcard!
+            // If cursor is near top/bottom (or left/right) edge, user wants to reorder between siblings.
+            const isNestingAction = edgeRatio < 0.45 && (!isSibling || (targetNode.id !== node.id));
+
+            if (isSibling && !isNestingAction) {
+              // Reordering among siblings along the boundary edge!
               const insertBefore = isHorizontal
                 ? (e.clientX < rect.left + rect.width / 2)
                 : (e.clientY < rect.top + rect.height / 2);
@@ -6250,7 +6353,7 @@
               dropAction = { type: "reorder", targetNode, insertBefore };
               showDragIndicator(targetNode, insertBefore, isHorizontal);
             } else {
-              // Attaching to a new parent topic!
+              // Attaching to card as a subtopic!
               targetEl.classList.add("is-drop-target");
               dropAction = { type: "reparent", targetNode };
             }
@@ -6261,10 +6364,12 @@
           window.removeEventListener("mousemove", onMouseMove);
           window.removeEventListener("mouseup", onMouseUp);
 
-          currentEl.classList.remove("is-dragging");
-          currentEl.style.pointerEvents = "";
-          currentEl.style.zIndex = "";
-          currentEl.style.transform = "";
+          dragElementsList.forEach(el => {
+            el.classList.remove("is-dragging");
+            el.style.pointerEvents = "";
+            el.style.zIndex = "";
+            el.style.transform = "";
+          });
 
           hideDragIndicator();
           document.querySelectorAll(".mind-node").forEach(el => el.classList.remove("is-drop-target"));
@@ -6275,23 +6380,29 @@
               render();
             } else if (dropAction) {
               if (dropAction.type === "reorder") {
-                const oldIdx = sheet.nodes.findIndex(n => n.id === node.id);
-                if (oldIdx !== -1) {
-                  sheet.nodes.splice(oldIdx, 1);
-                }
+                // Reorder all selected nodes together cleanly
+                const movingNodes = [...dragNodesList];
+                movingNodes.forEach(m => {
+                  const idx = sheet.nodes.findIndex(n => n.id === m.id);
+                  if (idx !== -1) sheet.nodes.splice(idx, 1);
+                });
                 const targetIdx = sheet.nodes.findIndex(n => n.id === dropAction.targetNode.id);
-                const newIdx = dropAction.insertBefore ? targetIdx : targetIdx + 1;
-                sheet.nodes.splice(newIdx, 0, node);
+                const insertIdx = (targetIdx === -1) ? sheet.nodes.length : (dropAction.insertBefore ? targetIdx : targetIdx + 1);
+                sheet.nodes.splice(insertIdx, 0, ...movingNodes);
 
-                node.parentId = dropAction.targetNode.parentId;
-                node.side = dropAction.targetNode.side;
-                showToast("Topics Reordered");
+                movingNodes.forEach(m => {
+                  m.parentId = dropAction.targetNode.parentId;
+                  m.side = dropAction.targetNode.side;
+                });
+                showToast(movingNodes.length > 1 ? `${movingNodes.length} Topics Reordered` : "Topics Reordered");
                 pushHistory();
                 render();
               } else if (dropAction.type === "reparent") {
-                node.parentId = dropAction.targetNode.id;
-                node.side = dropAction.targetNode.side || (dropAction.targetNode.x >= 0 ? "right" : "left");
-                showToast("Topic Reattached");
+                dragNodesList.forEach(m => {
+                  m.parentId = dropAction.targetNode.id;
+                  m.side = dropAction.targetNode.side || (dropAction.targetNode.x >= 0 ? "right" : "left");
+                });
+                showToast(dragNodesList.length > 1 ? `${dragNodesList.length} Topics Reattached` : "Topic Reattached");
                 pushHistory();
                 render();
               }
@@ -7306,12 +7417,26 @@
         }
       }
 
+      function getOrderedChildren(sheet, parentId) {
+        const children = sheet.nodes.filter(n => n.parentId === parentId);
+        if (parentId === "root" && sheet.layout === "radial") {
+          // Clockwise order: Right branch top-to-bottom, then Left branch bottom-to-top
+          const rightChildren = children.filter(c => c.side !== "left").sort((a, b) => a.y - b.y);
+          const leftChildren = children.filter(c => c.side === "left").sort((a, b) => b.y - a.y);
+          return [...rightChildren, ...leftChildren];
+        } else if (sheet.layout === "tree-down") {
+          return [...children].sort((a, b) => a.x - b.x);
+        } else {
+          return [...children].sort((a, b) => a.y - b.y);
+        }
+      }
+
       function buildPresentationOrder(rootId) {
         const sheet = getActiveSheet();
         const list = [];
         function dfs(id) {
           list.push(id);
-          sheet.nodes.filter(n => n.parentId === id).forEach(child => dfs(child.id));
+          getOrderedChildren(sheet, id).forEach(child => dfs(child.id));
         }
         dfs(rootId);
         return list;
@@ -7362,13 +7487,13 @@
               minY = Math.min(minY, pn.y - h / 2);
               maxY = Math.max(maxY, pn.y + h / 2);
             });
-            const bndW = (maxX - minX) + 140;
-            const bndH = (maxY - minY) + 140;
+            const bndW = (maxX - minX) + 220;
+            const bndH = (maxY - minY) + 200;
             const prompterHeightOffset = state.showPrompter ? 54 : 0;
             const availH = Math.max(300, window.innerHeight - (state.showPrompter ? 110 : 0));
-            const fitZoomX = (window.innerWidth * 0.78) / Math.max(1, bndW);
-            const fitZoomY = (availH * 0.72) / Math.max(1, bndH);
-            const targetZoom = Math.min(1.22, Math.max(0.72, Math.min(fitZoomX, fitZoomY)));
+            const fitZoomX = (window.innerWidth * 0.74) / Math.max(1, bndW);
+            const fitZoomY = (availH * 0.68) / Math.max(1, bndH);
+            const targetZoom = Math.min(1.18, Math.max(0.68, Math.min(fitZoomX, fitZoomY)));
             const bndCenterX = (minX + maxX) / 2;
             const bndCenterY = (minY + maxY) / 2;
             const focusX = bndCenterX * 0.65 + node.x * 0.35;
@@ -7785,7 +7910,8 @@
             const tagsStr = document.getElementById("input-node-tags").value;
             node.tags = tagsStr ? tagsStr.split(",").map(t => t.trim()).filter(Boolean) : [];
 
-            const rawInputVal = document.getElementById("input-custom-emoji")?.value.trim();
+            const customInputEl = document.getElementById("input-custom-emoji");
+            const rawInputVal = customInputEl ? customInputEl.value.trim() : "";
             const activeEmojiBtn = document.querySelector("#emoji-picker-row .emoji-choice-btn.is-active");
             const resolvedEmoji = (rawInputVal !== undefined && rawInputVal !== "")
               ? rawInputVal
@@ -8801,6 +8927,7 @@
           activeSheetId: state.activeSheetId,
           hideGroupBoundaries: !!state.hideGroupBoundaries,
           hideRelationshipTitles: !!state.hideRelationshipTitles,
+          showBranchNumbers: !!state.showBranchNumbers,
           sheets: state.sheets,
           exportedAt: new Date().toISOString()
         };
@@ -8829,6 +8956,7 @@
 
               state.hideGroupBoundaries = !!data.hideGroupBoundaries;
               state.hideRelationshipTitles = !!data.hideRelationshipTitles;
+              state.showBranchNumbers = !!data.showBranchNumbers;
               updateViewMenuChecks();
               if (Array.isArray(data.sheets)) {
                 state.sheets = data.sheets;
