@@ -3402,16 +3402,25 @@
             </label>
           </div>
 
-          <!-- Boundary Visibility Toggle -->
+          <!-- Boundary Visibility Toggles -->
           <div class="form-group">
-            <label class="form-label">Boundary Visibility</label>
-            <label style="display:flex; align-items:flex-start; gap:10px; background:var(--bg-surface); border:1px solid var(--border-strong); padding:9px 12px; border-radius:10px; cursor:pointer;">
-              <input type="checkbox" id="bnd-hidden-toggle" style="margin-top:3px; accent-color:var(--accent); width:15px; height:15px; cursor:pointer; flex-shrink:0;" />
-              <div style="display:flex; flex-direction:column; gap:2px;">
-                <span style="font-size:0.82rem; font-weight:600; color:var(--text-main);">Hide this group boundary box and tag</span>
-                <span style="font-size:0.72rem; color:var(--text-muted); line-height:1.35;">Hides the enclosure background and badge while keeping all contained topics visible.</span>
-              </div>
-            </label>
+            <label class="form-label">Boundary Visibility &amp; Display</label>
+            <div style="display:flex; flex-direction:column; gap:8px;">
+              <label style="display:flex; align-items:flex-start; gap:10px; background:var(--bg-surface); border:1px solid var(--border-strong); padding:9px 12px; border-radius:10px; cursor:pointer;">
+                <input type="checkbox" id="bnd-hidden-box-toggle" style="margin-top:3px; accent-color:var(--accent); width:15px; height:15px; cursor:pointer; flex-shrink:0;" />
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                  <span style="font-size:0.82rem; font-weight:600; color:var(--text-main);">Hide boundary line &amp; background box</span>
+                  <span style="font-size:0.72rem; color:var(--text-muted); line-height:1.35;">Hides the outer border line and background color enclosure while keeping the group intact.</span>
+                </div>
+              </label>
+              <label style="display:flex; align-items:flex-start; gap:10px; background:var(--bg-surface); border:1px solid var(--border-strong); padding:9px 12px; border-radius:10px; cursor:pointer;">
+                <input type="checkbox" id="bnd-hidden-title-toggle" style="margin-top:3px; accent-color:var(--accent); width:15px; height:15px; cursor:pointer; flex-shrink:0;" />
+                <div style="display:flex; flex-direction:column; gap:2px;">
+                  <span style="font-size:0.82rem; font-weight:600; color:var(--text-main);">Hide boundary title &amp; tag badge</span>
+                  <span style="font-size:0.72rem; color:var(--text-muted); line-height:1.35;">Hides the title pill and emoji badge above the boundary.</span>
+                </div>
+              </label>
+            </div>
           </div>
 
           <!-- Topics Checklist -->
@@ -5059,8 +5068,9 @@
         // 2. Render Boundaries (Under-layer group enclosures)
         boundariesGroup.innerHTML = "";
         (sheet.boundaries || []).forEach(bnd => {
-          const isBndHidden = bnd.hidden === true || (state.hideGroupBoundaries && state.selectedBoundaryId !== bnd.id);
-          if (isBndHidden) return;
+          const isBoxHidden = bnd.hiddenBox === true || bnd.hidden === true || (state.hideGroupBoundaries && state.selectedBoundaryId !== bnd.id);
+          const isTitleHidden = bnd.hiddenTitle === true || bnd.hidden === true || (state.hideGroupBoundaries && state.selectedBoundaryId !== bnd.id);
+          if (isBoxHidden && isTitleHidden && state.selectedBoundaryId !== bnd.id) return;
           const memberNodes = sheet.nodes.filter(n => bnd.nodeIds.includes(n.id) && isVisible.has(n.id));
           if (memberNodes.length === 0) return;
 
@@ -5137,7 +5147,9 @@
             openContextMenu(e.clientX, e.clientY, false, bnd.id);
           });
 
-          g.appendChild(rect);
+          if (!isBoxHidden || state.selectedBoundaryId === bnd.id) {
+            g.appendChild(rect);
+          }
 
           // Boundary Title Pill Tag
           const displayTitle = (bnd.icon ? bnd.icon + " " : "") + (bnd.title || "Boundary");
@@ -5161,6 +5173,10 @@
 
           pillG.appendChild(pillBg);
           pillG.appendChild(pillText);
+
+          if (isTitleHidden && state.selectedBoundaryId !== bnd.id) {
+            pillG.style.display = "none";
+          }
 
           pillG.addEventListener("click", (e) => {
             e.stopPropagation();
@@ -5325,6 +5341,10 @@
           const relPath = document.createElementNS("http://www.w3.org/2000/svg", "path");
           relPath.setAttribute("id", `rel-path-${rel.id}`);
           relPath.setAttribute("d", pathD);
+          const isRelLineHidden = rel.hiddenLine === true && !isRelSelected;
+          if (isRelLineHidden) {
+            relPath.style.display = "none";
+          }
           relPath.setAttribute("class", `relationship-path ${isRelSelected ? "is-selected" : ""} ${isSpotlightRel ? "is-spotlight" : ""}`);
           relPath.setAttribute("marker-end", "url(#arrowhead)");
 
@@ -5377,7 +5397,10 @@
             [relHit, relPath, relFromHandle, relToHandle].forEach(el => {
               el.addEventListener("mouseenter", showRelHover);
               el.addEventListener("mouseleave", hideRelHover);
-              el.addEventListener("dblclick", resetRelPorts);
+              el.addEventListener("dblclick", (e) => {
+                e.stopPropagation();
+                openRelationshipModal(rel.id);
+              });
             });
 
             relHit.addEventListener("mousedown", (e) => initRelationshipPortDrag(e, rel, fromNode, toNode, "auto"));
@@ -5467,12 +5490,7 @@
                 pushHistory();
                 render();
               } else {
-                const newLabel = prompt("Edit Arrow Label (or leave blank):", rel.label || "");
-                if (newLabel !== null) {
-                  rel.label = newLabel.trim();
-                  pushHistory();
-                  render();
-                }
+                openRelationshipModal(rel.id);
               }
             }
 
@@ -7024,10 +7042,14 @@
           presentTogetherCb.checked = bnd.presentTogether !== false;
         }
 
-        // Boundary hidden toggle
-        const bndHiddenCb = document.getElementById("bnd-hidden-toggle");
-        if (bndHiddenCb) {
-          bndHiddenCb.checked = bnd.hidden === true;
+        // Boundary hidden toggles
+        const bndHiddenBoxCb = document.getElementById("bnd-hidden-box-toggle");
+        if (bndHiddenBoxCb) {
+          bndHiddenBoxCb.checked = bnd.hiddenBox === true || bnd.hidden === true;
+        }
+        const bndHiddenTitleCb = document.getElementById("bnd-hidden-title-toggle");
+        if (bndHiddenTitleCb) {
+          bndHiddenTitleCb.checked = bnd.hiddenTitle === true || bnd.hidden === true;
         }
 
         // Topics checklist
@@ -8556,15 +8578,71 @@
 
       document.getElementById("inspector-btn-rel-label")?.addEventListener("click", () => {
         if (!state.selectedRelId) return;
+        openRelationshipModal(state.selectedRelId);
+      });
+
+      // Relationship Settings Modal Logic
+      let currentEditingRelId = null;
+
+      function openRelationshipModal(relId) {
         const sheet = getActiveSheet();
-        const rel = (sheet.relationships || []).find(r => r.id === state.selectedRelId);
+        const rel = (sheet.relationships || []).find(r => r.id === relId);
         if (!rel) return;
-        const newLabel = prompt("Edit Arrow Label (or leave blank):", rel.label || "");
-        if (newLabel !== null) {
-          rel.label = newLabel.trim();
-          pushHistory();
-          render();
-        }
+
+        currentEditingRelId = relId;
+        state.selectedRelId = relId;
+        state.selectedNodeId = null;
+        state.selectedNodeIds.clear();
+        state.selectedBoundaryId = null;
+
+        const modal = document.getElementById("relationship-settings-modal");
+        document.getElementById("rel-modal-input-label").value = rel.label || "";
+        document.getElementById("rel-modal-hide-title").checked = rel.hiddenLabel === true;
+        document.getElementById("rel-modal-hide-line").checked = rel.hiddenLine === true;
+
+        modal.classList.add("is-open");
+        setTimeout(() => document.getElementById("rel-modal-input-label").focus(), 50);
+      }
+
+      function closeRelationshipModal() {
+        const modal = document.getElementById("relationship-settings-modal");
+        if (modal) modal.classList.remove("is-open");
+        currentEditingRelId = null;
+      }
+
+      document.getElementById("btn-close-rel-modal")?.addEventListener("click", closeRelationshipModal);
+      document.getElementById("rel-modal-btn-cancel")?.addEventListener("click", closeRelationshipModal);
+      document.getElementById("relationship-settings-modal")?.addEventListener("click", (e) => {
+        if (e.target.id === "relationship-settings-modal") closeRelationshipModal();
+      });
+
+      document.getElementById("rel-modal-btn-delete")?.addEventListener("click", () => {
+        if (!currentEditingRelId) return;
+        const sheet = getActiveSheet();
+        sheet.relationships = (sheet.relationships || []).filter(r => r.id !== currentEditingRelId);
+        state.selectedRelId = null;
+        closeRelationshipModal();
+        pushHistory();
+        render();
+        showToast("Relationship Deleted");
+      });
+
+      document.getElementById("rel-modal-btn-save")?.addEventListener("click", () => {
+        if (!currentEditingRelId) return;
+        const sheet = getActiveSheet();
+        const rel = (sheet.relationships || []).find(r => r.id === currentEditingRelId);
+        if (!rel) return;
+
+        const label = document.getElementById("rel-modal-input-label").value.trim();
+        rel.label = label;
+        rel.hiddenLabel = document.getElementById("rel-modal-hide-title").checked;
+        rel.hiddenLine = document.getElementById("rel-modal-hide-line").checked;
+
+        closeRelationshipModal();
+        pushHistory();
+        render();
+        updateInspectorBar();
+        showToast("Relationship Settings Saved");
       });
 
       function applyColorToSelection(newColor, commitHistory = true) {
@@ -8843,8 +8921,11 @@
         bnd.nodeIds = checkedNodeIds;
         const presentTogetherCb = document.getElementById("bnd-present-together");
         bnd.presentTogether = presentTogetherCb ? presentTogetherCb.checked : true;
-        const bndHiddenCb = document.getElementById("bnd-hidden-toggle");
-        bnd.hidden = bndHiddenCb ? bndHiddenCb.checked : false;
+        const bndHiddenBoxCb = document.getElementById("bnd-hidden-box-toggle");
+        bnd.hiddenBox = bndHiddenBoxCb ? bndHiddenBoxCb.checked : false;
+        const bndHiddenTitleCb = document.getElementById("bnd-hidden-title-toggle");
+        bnd.hiddenTitle = bndHiddenTitleCb ? bndHiddenTitleCb.checked : false;
+        bnd.hidden = bnd.hiddenBox && bnd.hiddenTitle;
 
         closeBoundaryModal();
         pushHistory();
